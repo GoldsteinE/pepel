@@ -1,0 +1,11 @@
+[package]
+name = "plugins"
+version = "0.1.0"
+authors = ["Maximilian Siling <mouse-art@ya.ru>"]
+edition = "2018"
+
+[dependencies]
+config = { path = "../config" }
+errors = { path = "../errors" }
+mlua = { version = "0.5.3", features = ["lua54", "vendored", "send"] }
+pulldown-cmark = { version = "0.8", default-features = false }

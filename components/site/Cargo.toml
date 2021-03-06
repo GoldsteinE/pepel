@@ -26,6 +26,7 @@ search = { path = "../search" }
 imageproc = { path = "../imageproc" }
 library = { path = "../library" }
 link_checker = { path = "../link_checker" }
+plugins = { path = "../plugins" }
 
 [dev-dependencies]
 tempfile = "3"

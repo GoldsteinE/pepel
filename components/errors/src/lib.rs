@@ -10,6 +10,7 @@ pub enum ErrorKind {
     Toml(toml::de::Error),
     Image(image::ImageError),
     Syntect(syntect::LoadingError),
+    Lua(mlua::Error),
 }
 
 /// The Error type
@@ -41,6 +42,7 @@ impl fmt::Display for Error {
             ErrorKind::Toml(ref e) => write!(f, "{}", e),
             ErrorKind::Image(ref e) => write!(f, "{}", e),
             ErrorKind::Syntect(ref e) => write!(f, "{}", e),
+            ErrorKind::Lua(ref e) => write!(f, "{}", e),
         }
     }
 }
@@ -104,6 +106,13 @@ impl From<image::ImageError> for Error {
         Self { kind: ErrorKind::Image(e), source: None }
     }
 }
+
+impl From<mlua::Error> for Error {
+    fn from(e: mlua::Error) -> Self {
+        Self { kind: ErrorKind::Lua(e), source: None }
+    }
+}
+
 /// Convenient wrapper around std::Result.
 pub type Result<T> = ::std::result::Result<T, Error>;
 

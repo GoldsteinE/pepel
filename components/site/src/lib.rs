@@ -27,6 +27,7 @@ use utils::fs::{
 use utils::minify;
 use utils::net::get_available_port;
 use utils::templates::render_template;
+use plugins::Plugins;
 
 lazy_static! {
     /// The in-memory rendered map content
@@ -50,6 +51,7 @@ pub struct Site {
     pub config: Config,
     pub tera: Tera,
     imageproc: Arc<Mutex<imageproc::Processor>>,
+    plugins: Arc<Mutex<Plugins>>,
     // the live reload port to be used if there is one
     pub live_reload: Option<u16>,
     pub output_path: PathBuf,
@@ -88,11 +90,14 @@ impl Site {
             imageproc::Processor::new(content_path.clone(), &static_path, &config.base_url);
         let output_path = path.join(config.output_dir.clone());
 
+        let plugins = Arc::new(Mutex::new(Plugins::read_dir(path.join("plugins"))?));
+
         let site = Site {
             base_path: path.to_path_buf(),
             config,
             tera,
             imageproc: Arc::new(Mutex::new(imageproc)),
+            plugins,
             live_reload: None,
             output_path,
             content_path,

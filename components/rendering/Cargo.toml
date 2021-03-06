@@ -22,6 +22,8 @@ front_matter = { path = "../front_matter" }
 utils = { path = "../utils" }
 config = { path = "../config" }
 link_checker = { path = "../link_checker" }
+plugins = { path = "../plugins" }
+itertools = "0.10.0"
 
 [dev-dependencies]
 templates = { path = "../templates" }

@@ -9,3 +9,4 @@ tera = "1"
 toml = "0.5"
 image = "0.23"
 syntect = "4.4"
+mlua = { version = "0.5.3", features = ["lua54", "vendored", "send"] }

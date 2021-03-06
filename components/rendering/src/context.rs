@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
+use plugins::Plugins;
 use config::Config;
 use front_matter::InsertAnchor;
 use tera::{Context, Tera};
@@ -10,6 +11,7 @@ use tera::{Context, Tera};
 pub struct RenderContext<'a> {
     pub tera: Cow<'a, Tera>,
     pub config: &'a Config,
+    pub plugins: Option<&'a Plugins>,
     pub tera_context: Context,
     pub current_page_permalink: &'a str,
     pub permalinks: Cow<'a, HashMap<String, String>>,
@@ -20,6 +22,7 @@ impl<'a> RenderContext<'a> {
     pub fn new(
         tera: &'a Tera,
         config: &'a Config,
+        plugins: Option<&'a Plugins>,
         current_page_permalink: &'a str,
         permalinks: &'a HashMap<String, String>,
         insert_anchor: InsertAnchor,
@@ -33,6 +36,7 @@ impl<'a> RenderContext<'a> {
             permalinks: Cow::Borrowed(permalinks),
             insert_anchor,
             config,
+            plugins,
         }
     }
 
@@ -44,6 +48,7 @@ impl<'a> RenderContext<'a> {
             current_page_permalink: "",
             permalinks: Cow::Owned(HashMap::new()),
             insert_anchor: InsertAnchor::None,
+            plugins: None,
             config,
         }
     }
