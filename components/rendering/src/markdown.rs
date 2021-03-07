@@ -1,9 +1,9 @@
+use itertools::Either;
 use lazy_static::lazy_static;
 use plugins::Plugins;
 use pulldown_cmark as cmark;
 use regex::Regex;
 use syntect::html::{start_highlighted_html_snippet, IncludeBackground};
-use itertools::Either;
 
 use crate::context::RenderContext;
 use crate::table_of_contents::{make_table_of_contents, Heading};
@@ -193,6 +193,145 @@ pub fn markdown_to_html(content: &str, context: &RenderContext) -> Result<Render
     }
 
     {
+        let mut preprocess_event = |event| {
+            match event {
+                Event::Text(text) => {
+                    // if we are in the middle of a highlighted code block
+                    if let Some(ref mut code_block) = highlighter {
+                        let html = code_block.highlight(&text);
+                        Event::Html(html.into())
+                    } else if context.config.markdown.render_emoji {
+                        let processed_text = EMOJI_REPLACER.replace_all(&text);
+                        Event::Text(processed_text.to_string().into())
+                    } else {
+                        // Business as usual
+                        Event::Text(text)
+                    }
+                }
+                Event::Start(Tag::CodeBlock(ref kind)) => {
+                    let language = match kind {
+                        cmark::CodeBlockKind::Fenced(fence_info) => {
+                            let fence_info = fence::FenceSettings::new(fence_info);
+                            fence_info.language
+                        }
+                        _ => None,
+                    };
+
+                    if !context.config.highlight_code() {
+                        if let Some(lang) = language {
+                            let html = format!(
+                                r#"<pre><code class="language-{}" data-lang="{}">"#,
+                                lang, lang
+                            );
+                            return Event::Html(html.into());
+                        }
+                        return Event::Html("<pre><code>".into());
+                    }
+
+                    let theme = &THEME_SET.themes[context.config.highlight_theme()];
+                    match kind {
+                        cmark::CodeBlockKind::Indented => (),
+                        cmark::CodeBlockKind::Fenced(fence_info) => {
+                            // This selects the background color the same way that
+                            // start_coloured_html_snippet does
+                            let color = theme
+                                .settings
+                                .background
+                                .unwrap_or(::syntect::highlighting::Color::WHITE);
+
+                            highlighter = Some(CodeBlock::new(
+                                fence_info,
+                                &context.config,
+                                IncludeBackground::IfDifferent(color),
+                            ));
+                        }
+                    };
+                    let snippet = start_highlighted_html_snippet(theme);
+                    let mut html = snippet.0;
+                    if let Some(lang) = language {
+                        html.push_str(&format!(
+                            r#"<code class="language-{}" data-lang="{}">"#,
+                            lang, lang
+                        ));
+                    } else {
+                        html.push_str("<code>");
+                    }
+                    Event::Html(html.into())
+                }
+                Event::End(Tag::CodeBlock(_)) => {
+                    if !context.config.highlight_code() {
+                        return Event::Html("</code></pre>\n".into());
+                    }
+                    // reset highlight and close the code block
+                    highlighter = None;
+                    Event::Html("</code></pre>".into())
+                }
+                Event::Start(Tag::Image(link_type, src, title)) => {
+                    if is_colocated_asset_link(&src) {
+                        let link = format!("{}{}", context.current_page_permalink, &*src);
+                        return Event::Start(Tag::Image(link_type, link.into(), title));
+                    }
+
+                    Event::Start(Tag::Image(link_type, src, title))
+                }
+                Event::Start(Tag::Link(link_type, link, title)) if link.is_empty() => {
+                    error = Some(Error::msg("There is a link that is missing a URL"));
+                    Event::Start(Tag::Link(link_type, "#".into(), title))
+                }
+                Event::Start(Tag::Link(link_type, link, title)) => {
+                    let fixed_link = match fix_link(
+                        link_type,
+                        &link,
+                        context,
+                        &mut internal_links_with_anchors,
+                        &mut external_links,
+                    ) {
+                        Ok(fixed_link) => fixed_link,
+                        Err(err) => {
+                            error = Some(err);
+                            return Event::Html("".into());
+                        }
+                    };
+                    if is_external_link(&link) && context.config.markdown.has_external_link_tweaks()
+                    {
+                        let mut escaped = String::new();
+                        // write_str can fail but here there are no reasons it should (afaik?)
+                        cmark::escape::escape_href(&mut escaped, &link)
+                            .expect("Could not write to buffer");
+                        Event::Html(
+                            context
+                                .config
+                                .markdown
+                                .construct_external_link_tag(&escaped, &title)
+                                .into(),
+                        )
+                    } else {
+                        Event::Start(Tag::Link(link_type, fixed_link.into(), title))
+                    }
+                }
+                Event::Html(ref markup) => {
+                    if markup.contains("<!-- more -->") {
+                        has_summary = true;
+                        Event::Html(CONTINUE_READING.into())
+                    } else if in_html_block && markup.contains("</pre>") {
+                        in_html_block = false;
+                        Event::Html(markup.replacen("</pre>", "", 1).into())
+                    } else if markup.contains("pre data-shortcode") {
+                        in_html_block = true;
+                        let m = markup.replacen("<pre data-shortcode>", "", 1);
+                        if m.contains("</pre>") {
+                            in_html_block = false;
+                            Event::Html(m.replacen("</pre>", "", 1).into())
+                        } else {
+                            Event::Html(m.into())
+                        }
+                    } else {
+                        event
+                    }
+                }
+                _ => event,
+            }
+        };
         let mut events = Parser::new_ext(content, opts)
             .map(|event| {
                 let plugins = match &context.plugins {
@@ -205,152 +344,11 @@ pub fn markdown_to_html(content: &str, context: &RenderContext) -> Result<Render
                     Err(err) => return Err(err),
                 };
 
-                Ok(Either::Right(events.into_iter().map(|event| {
-                    match event {
-                        Event::Text(text) => {
-                            // if we are in the middle of a highlighted code block
-                            if let Some(ref mut code_block) = highlighter {
-                                let html = code_block.highlight(&text);
-                                Event::Html(html.into())
-                            } else if context.config.markdown.render_emoji {
-                                let processed_text = EMOJI_REPLACER.replace_all(&text);
-                                Event::Text(processed_text.to_string().into())
-                            } else {
-                                // Business as usual
-                                Event::Text(text)
-                            }
-                        }
-                        Event::Start(Tag::CodeBlock(ref kind)) => {
-                            let language = match kind {
-                                cmark::CodeBlockKind::Fenced(fence_info) => {
-                                    let fence_info = fence::FenceSettings::new(fence_info);
-                                    fence_info.language
-                                }
-                                _ => None,
-                            };
-
-                            if !context.config.highlight_code() {
-                                if let Some(lang) = language {
-                                    let html = format!(
-                                        r#"<pre><code class="language-{}" data-lang="{}">"#,
-                                        lang, lang
-                                    );
-                                    return Event::Html(html.into());
-                                }
-                                return Event::Html("<pre><code>".into());
-                            }
-
-                            let theme = &THEME_SET.themes[context.config.highlight_theme()];
-                            match kind {
-                                cmark::CodeBlockKind::Indented => (),
-                                cmark::CodeBlockKind::Fenced(fence_info) => {
-                                    // This selects the background color the same way that
-                                    // start_coloured_html_snippet does
-                                    let color = theme
-                                        .settings
-                                        .background
-                                        .unwrap_or(::syntect::highlighting::Color::WHITE);
-
-                                    highlighter = Some(CodeBlock::new(
-                                            fence_info,
-                                            &context.config,
-                                            IncludeBackground::IfDifferent(color),
-                                    ));
-                                }
-                            };
-                            let snippet = start_highlighted_html_snippet(theme);
-                            let mut html = snippet.0;
-                            if let Some(lang) = language {
-                                html.push_str(&format!(
-                                        r#"<code class="language-{}" data-lang="{}">"#,
-                                        lang, lang
-                                ));
-                            } else {
-                                html.push_str("<code>");
-                            }
-                            Event::Html(html.into())
-                        }
-                        Event::End(Tag::CodeBlock(_)) => {
-                            if !context.config.highlight_code() {
-                                return Event::Html("</code></pre>\n".into());
-                            }
-                            // reset highlight and close the code block
-                            highlighter = None;
-                            Event::Html("</code></pre>".into())
-                        }
-                        Event::Start(Tag::Image(link_type, src, title)) => {
-                            if is_colocated_asset_link(&src) {
-                                let link = format!("{}{}", context.current_page_permalink, &*src);
-                                return Event::Start(Tag::Image(link_type, link.into(), title));
-                            }
-
-                            Event::Start(Tag::Image(link_type, src, title))
-                        }
-                        Event::Start(Tag::Link(link_type, link, title)) if link.is_empty() => {
-                            error = Some(Error::msg("There is a link that is missing a URL"));
-                            Event::Start(Tag::Link(link_type, "#".into(), title))
-                        }
-                        Event::Start(Tag::Link(link_type, link, title)) => {
-                            let fixed_link = match fix_link(
-                                link_type,
-                                &link,
-                                context,
-                                &mut internal_links_with_anchors,
-                                &mut external_links,
-                            ) {
-                                Ok(fixed_link) => fixed_link,
-                                Err(err) => {
-                                    error = Some(err);
-                                    return Event::Html("".into());
-                                }
-                            };
-                            if is_external_link(&link)
-                                && context.config.markdown.has_external_link_tweaks()
-                            {
-                                let mut escaped = String::new();
-                                // write_str can fail but here there are no reasons it should (afaik?)
-                                cmark::escape::escape_href(&mut escaped, &link)
-                                    .expect("Could not write to buffer");
-                                Event::Html(
-                                    context
-                                    .config
-                                    .markdown
-                                    .construct_external_link_tag(&escaped, &title)
-                                    .into(),
-                                )
-                            } else {
-                                Event::Start(Tag::Link(link_type, fixed_link.into(), title))
-                            }
-                        }
-                        Event::Html(ref markup) => {
-                            if markup.contains("<!-- more -->") {
-                                has_summary = true;
-                                Event::Html(CONTINUE_READING.into())
-                            } else if in_html_block && markup.contains("</pre>") {
-                                in_html_block = false;
-                                Event::Html(markup.replacen("</pre>", "", 1).into())
-                            } else if markup.contains("pre data-shortcode") {
-                                in_html_block = true;
-                                let m = markup.replacen("<pre data-shortcode>", "", 1);
-                                if m.contains("</pre>") {
-                                    in_html_block = false;
-                                    Event::Html(m.replacen("</pre>", "", 1).into())
-                                } else {
-                                    Event::Html(m.into())
-                                }
-                            } else {
-                                event
-                            }
-                        }
-                        _ => event,
-                    }
-                })))
+                Ok(Either::Right(events.into_iter().map(&mut preprocess_event)))
             })
-            .flat_map(|res| {
-                match res {
-                    Ok(iter) => Either::Left(iter.into_iter().map(Ok)),
-                    Err(err) => Either::Right(std::iter::once(Err(err))),
-                }
+            .flat_map(|res| match res {
+                Ok(iter) => Either::Left(iter.into_iter().map(Ok)),
+                Err(err) => Either::Right(std::iter::once(Err(err))),
             })
             .collect::<Result<Vec<_>>>()?; // We need to collect the events to make a second pass
 
