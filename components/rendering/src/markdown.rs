@@ -1,6 +1,4 @@
-use itertools::Either;
 use lazy_static::lazy_static;
-use plugins::Plugins;
 use pulldown_cmark as cmark;
 use regex::Regex;
 use syntect::html::{start_highlighted_html_snippet, IncludeBackground};
@@ -332,25 +330,22 @@ pub fn markdown_to_html(content: &str, context: &RenderContext) -> Result<Render
                 _ => event,
             }
         };
-        let mut events = Parser::new_ext(content, opts)
-            .map(|event| {
-                let plugins = match &context.plugins {
-                    Some(plugins) => plugins,
-                    None => return Ok(Either::Left(std::iter::once(event))),
+        let mut events = Parser::new_ext(content, opts).try_fold(
+            Vec::new(),
+            |mut acc, event| -> Result<Vec<Event>> {
+                match &context.plugins {
+                    Some(plugins) => {
+                        acc.extend(
+                            plugins.process_event(event)?.into_iter().map(&mut preprocess_event),
+                        );
+                    }
+                    None => {
+                        acc.push(event);
+                    }
                 };
-
-                let events = match plugins.process_event(event) {
-                    Ok(events) => events,
-                    Err(err) => return Err(err),
-                };
-
-                Ok(Either::Right(events.into_iter().map(&mut preprocess_event)))
-            })
-            .flat_map(|res| match res {
-                Ok(iter) => Either::Left(iter.into_iter().map(Ok)),
-                Err(err) => Either::Right(std::iter::once(Err(err))),
-            })
-            .collect::<Result<Vec<_>>>()?; // We need to collect the events to make a second pass
+                Ok(acc)
+            },
+        )?;
 
         let mut heading_refs = get_heading_refs(&events);
 

@@ -8,8 +8,10 @@ mod macros;
 mod lua_event;
 mod lua_simple_enum;
 mod lua_tag;
+mod lua_event_module;
+mod lua_tag_module;
 
-use crate::lua_event::LuaEvent;
+use crate::{lua_event::LuaEvent, lua_event_module::LuaEventModule, lua_tag_module::LuaTagModule};
 
 pub struct Plugins {
     lua: mlua::Lua,
@@ -19,8 +21,10 @@ pub struct Plugins {
 impl Plugins {
     pub fn read_dir<P: AsRef<Path>>(dir: P) -> Result<Self> {
         let lua = mlua::Lua::new();
-        let mut markdown_hooks = Vec::new();
+        lua.globals().set("Event", LuaEventModule)?;
+        lua.globals().set("Tag", LuaTagModule)?;
 
+        let mut markdown_hooks = Vec::new();
         let mut buf = Vec::new();
         for entry in dir.as_ref().read_dir()? {
             let entry = entry?;

@@ -368,14 +368,16 @@ impl Site {
         }
 
         let mut library = self.library.write().expect("Get lock for render_markdown");
+        // FIXME: This breaks parallel compilation of pages. Maybe make plugins thread-local?
         library
             .pages_mut()
             .values_mut()
             .collect::<Vec<_>>()
             .par_iter_mut()
             .map(|page| {
+                let plugins = self.plugins.lock().expect("Thread panicked while holding plugins lock");
                 let insert_anchor = pages_insert_anchors[&page.file.path];
-                page.render_markdown(permalinks, tera, config, insert_anchor)
+                page.render_markdown(permalinks, tera, config, &plugins, insert_anchor)
             })
             .collect::<Result<()>>()?;
 
@@ -384,7 +386,10 @@ impl Site {
             .values_mut()
             .collect::<Vec<_>>()
             .par_iter_mut()
-            .map(|section| section.render_markdown(permalinks, tera, config))
+            .map(|section| {
+                let plugins = self.plugins.lock().expect("Thread panicked while holding plugins lock");
+                section.render_markdown(permalinks, tera, config, &plugins)
+            })
             .collect::<Result<()>>()?;
 
         Ok(())
@@ -393,11 +398,12 @@ impl Site {
     /// Add a page to the site
     /// The `render` parameter is used in the serve command with --fast, when rebuilding a page.
     pub fn add_page(&mut self, mut page: Page, render_md: bool) -> Result<()> {
+        let plugins = self.plugins.lock().expect("Thread panicked while holding plugins lock");
         self.permalinks.insert(page.file.relative.clone(), page.permalink.clone());
         if render_md {
             let insert_anchor =
                 self.find_parent_section_insert_anchor(&page.file.parent, &page.lang);
-            page.render_markdown(&self.permalinks, &self.tera, &self.config, insert_anchor)?;
+            page.render_markdown(&self.permalinks, &self.tera, &self.config, &plugins, insert_anchor)?;
         }
 
         let mut library = self.library.write().expect("Get lock for add_page");
@@ -422,9 +428,10 @@ impl Site {
     /// Add a section to the site
     /// The `render` parameter is used in the serve command with --fast, when rebuilding a page.
     pub fn add_section(&mut self, mut section: Section, render_md: bool) -> Result<()> {
+        let plugins = self.plugins.lock().expect("Thread panicked while holding plugins lock");
         self.permalinks.insert(section.file.relative.clone(), section.permalink.clone());
         if render_md {
-            section.render_markdown(&self.permalinks, &self.tera, &self.config)?;
+            section.render_markdown(&self.permalinks, &self.tera, &self.config, &plugins)?;
         }
         let mut library = self.library.write().expect("Get lock for add_section");
         library.remove_section(&section.file.path);

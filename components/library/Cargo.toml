@@ -19,6 +19,7 @@ config = { path = "../config" }
 utils = { path = "../utils" }
 rendering = { path = "../rendering" }
 errors = { path = "../errors" }
+plugins = { path = "../plugins" }
 
 [dev-dependencies]
 tempfile = "3"

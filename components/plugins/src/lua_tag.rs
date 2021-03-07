@@ -1,9 +1,10 @@
+use mlua::MetaMethod;
 use pulldown_cmark::{CodeBlockKind, LinkType, Tag};
 
-use crate::lua_simple_enum::LuaSimpleEnum;
+use crate::lua_simple_enum::SimpleEnum;
 
 /// Lua representation of [`pulldown_cmark::Tag::Link`] and [`pulldown_cmark::Tag::Image`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LuaLink {
     link_type: LinkType,
     destination: String,
@@ -12,6 +13,10 @@ pub struct LuaLink {
 
 impl mlua::UserData for LuaLink {
     fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_meta_method(MetaMethod::Eq, |_, this, other: LuaLink| -> mlua::Result<bool> {
+            Ok(this == &other)
+        });
+
         methods.add_method("type", |_, this, ()| -> mlua::Result<&'static str> {
             Ok(this.link_type.tag_str())
         });
@@ -26,7 +31,7 @@ impl mlua::UserData for LuaLink {
 }
 
 /// Wrapper around [`pulldown_cmark::Tag`] implementing [`mlua::UserData`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LuaTag(pub Tag<'static>);
 
 impl<'a> From<Tag<'a>> for LuaTag {
@@ -67,6 +72,10 @@ impl From<LuaTag> for Tag<'static> {
 
 impl mlua::UserData for LuaTag {
     fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_meta_method(MetaMethod::Eq, |_, this, other: LuaTag| -> mlua::Result<bool> {
+            Ok(this == &other)
+        });
+
         impl_lua_is!(methods => {
             is_paragraph: Tag::Paragraph,
             is_heading: Tag::Heading(_),

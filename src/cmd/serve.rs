@@ -270,6 +270,7 @@ pub fn serve(
     let watch_this = vec![
         ("config.toml", WatchMode::Required),
         ("content", WatchMode::Required),
+        ("plugins", WatchMode::Required),
         ("sass", WatchMode::Condition(site.config.compile_sass)),
         ("static", WatchMode::Optional),
         ("templates", WatchMode::Optional),

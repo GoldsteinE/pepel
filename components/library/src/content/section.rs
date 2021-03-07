@@ -11,6 +11,7 @@ use rendering::{render_content, Heading, RenderContext};
 use utils::fs::{find_related_assets, read_file};
 use utils::site::get_reading_analytics;
 use utils::templates::render_template;
+use plugins::Plugins;
 
 use crate::content::file_info::FileInfo;
 use crate::content::has_anchor;
@@ -168,10 +169,12 @@ impl Section {
         permalinks: &HashMap<String, String>,
         tera: &Tera,
         config: &Config,
+        plugins: &Plugins,
     ) -> Result<()> {
         let mut context = RenderContext::new(
             tera,
             config,
+            Some(plugins),
             &self.permalink,
             permalinks,
             self.meta.insert_anchor_links,

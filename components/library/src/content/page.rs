@@ -11,6 +11,7 @@ use crate::library::Library;
 use config::Config;
 use errors::{Error, Result};
 use front_matter::{split_page_content, InsertAnchor, PageFrontMatter};
+use plugins::Plugins;
 use rendering::{render_content, Heading, RenderContext};
 use utils::fs::{find_related_assets, read_file};
 use utils::site::get_reading_analytics;
@@ -243,10 +244,17 @@ impl Page {
         permalinks: &HashMap<String, String>,
         tera: &Tera,
         config: &Config,
+        plugins: &Plugins,
         anchor_insert: InsertAnchor,
     ) -> Result<()> {
-        let mut context =
-            RenderContext::new(tera, config, &self.permalink, permalinks, anchor_insert);
+        let mut context = RenderContext::new(
+            tera,
+            config,
+            Some(plugins),
+            &self.permalink,
+            permalinks,
+            anchor_insert,
+        );
 
         context.tera_context.insert("page", &SerializingPage::from_page_basic(self, None));
 

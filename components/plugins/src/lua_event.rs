@@ -1,9 +1,10 @@
 use pulldown_cmark::Event;
+use mlua::MetaMethod;
 
 use crate::lua_tag::LuaTag;
 
 /// Wrapper around [`pulldown_cmark::Event`] implementing [`mlua::UserData`]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LuaEvent(pub Event<'static>);
 
 impl<'a> From<Event<'a>> for LuaEvent {
@@ -31,6 +32,10 @@ impl From<LuaEvent> for Event<'static> {
 
 impl mlua::UserData for LuaEvent {
     fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_meta_method(MetaMethod::Eq, |_, this, other: LuaEvent| -> mlua::Result<bool> {
+            Ok(this == &other)
+        });
+
         impl_lua_is!(methods => {
             is_start_tag: Event::Start(_),
             is_end_tag: Event::End(_),
