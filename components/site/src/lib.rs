@@ -13,6 +13,7 @@ use lazy_static::lazy_static;
 use rayon::prelude::*;
 use tera::{Context, Tera};
 use walkdir::{DirEntry, WalkDir};
+use thread_local::ThreadLocal;
 
 use config::{get_config, Config};
 use errors::{bail, Error, Result};
@@ -51,7 +52,8 @@ pub struct Site {
     pub config: Config,
     pub tera: Tera,
     imageproc: Arc<Mutex<imageproc::Processor>>,
-    plugins: Arc<Mutex<Plugins>>,
+    plugins: ThreadLocal<Plugins>,
+    plugins_dir: PathBuf,
     // the live reload port to be used if there is one
     pub live_reload: Option<u16>,
     pub output_path: PathBuf,
@@ -90,7 +92,8 @@ impl Site {
             imageproc::Processor::new(content_path.clone(), &static_path, &config.base_url);
         let output_path = path.join(config.output_dir.clone());
 
-        let plugins = Arc::new(Mutex::new(Plugins::read_dir(path.join("plugins"))?));
+        let plugins = ThreadLocal::new();
+        let plugins_dir = path.join("plugins");
 
         let site = Site {
             base_path: path.to_path_buf(),
@@ -98,6 +101,7 @@ impl Site {
             tera,
             imageproc: Arc::new(Mutex::new(imageproc)),
             plugins,
+            plugins_dir,
             live_reload: None,
             output_path,
             content_path,
@@ -375,7 +379,7 @@ impl Site {
             .collect::<Vec<_>>()
             .par_iter_mut()
             .map(|page| {
-                let plugins = self.plugins.lock().expect("Thread panicked while holding plugins lock");
+                let plugins = self.plugins.get_or_try(|| Plugins::read_dir(&self.plugins_dir))?;
                 let insert_anchor = pages_insert_anchors[&page.file.path];
                 page.render_markdown(permalinks, tera, config, &plugins, insert_anchor)
             })
@@ -387,7 +391,7 @@ impl Site {
             .collect::<Vec<_>>()
             .par_iter_mut()
             .map(|section| {
-                let plugins = self.plugins.lock().expect("Thread panicked while holding plugins lock");
+                let plugins = self.plugins.get_or_try(|| Plugins::read_dir(&self.plugins_dir))?;
                 section.render_markdown(permalinks, tera, config, &plugins)
             })
             .collect::<Result<()>>()?;
@@ -398,7 +402,7 @@ impl Site {
     /// Add a page to the site
     /// The `render` parameter is used in the serve command with --fast, when rebuilding a page.
     pub fn add_page(&mut self, mut page: Page, render_md: bool) -> Result<()> {
-        let plugins = self.plugins.lock().expect("Thread panicked while holding plugins lock");
+        let plugins = self.plugins.get_or_try(|| Plugins::read_dir(&self.plugins_dir))?;
         self.permalinks.insert(page.file.relative.clone(), page.permalink.clone());
         if render_md {
             let insert_anchor =
@@ -428,7 +432,7 @@ impl Site {
     /// Add a section to the site
     /// The `render` parameter is used in the serve command with --fast, when rebuilding a page.
     pub fn add_section(&mut self, mut section: Section, render_md: bool) -> Result<()> {
-        let plugins = self.plugins.lock().expect("Thread panicked while holding plugins lock");
+        let plugins = self.plugins.get_or_try(|| Plugins::read_dir(&self.plugins_dir))?;
         self.permalinks.insert(section.file.relative.clone(), section.permalink.clone());
         if render_md {
             section.render_markdown(&self.permalinks, &self.tera, &self.config, &plugins)?;
