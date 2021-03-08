@@ -19,23 +19,22 @@ pub struct Plugins {
 }
 
 impl Plugins {
-    pub fn read_dir<P: AsRef<Path>>(dir: P) -> Result<Self> {
+    pub fn load<P: AsRef<Path>, N: AsRef<Path>>(dir: P, plugins: &[N]) -> Result<Self> {
         let lua = mlua::Lua::new();
         lua.globals().set("Event", LuaEventModule)?;
         lua.globals().set("Tag", LuaTagModule)?;
 
+        let dir = dir.as_ref();
         let mut markdown_hooks = Vec::new();
         let mut buf = Vec::new();
-        for entry in dir.as_ref().read_dir()? {
-            let entry = entry?;
-            let path = entry.path();
+        for plugin in plugins {
+            let mut path = dir.join(plugin);
+            path.set_extension("lua");
 
-            if path.extension() == Some("lua".as_ref()) {
-                buf.clear();
-                fs::File::open(path)?.read_to_end(&mut buf)?;
-                let hook: mlua::Function = lua.load(&buf).call(())?;
-                markdown_hooks.push(lua.create_registry_value(hook)?);
-            }
+            buf.clear();
+            fs::File::open(path)?.read_to_end(&mut buf)?;
+            let hook: mlua::Function = lua.load(&buf).call(())?;
+            markdown_hooks.push(lua.create_registry_value(hook)?);
         }
 
         Ok(Self { lua, markdown_hooks })

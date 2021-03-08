@@ -107,6 +107,9 @@ pub struct Config {
     /// The config for the Markdown rendering: syntax highlighting and everything
     pub markdown: markup::Markdown,
 
+    /// List of enabled Lua plugins
+    pub plugins: Vec<String>,
+
     /// All user params set in [extra] in the config
     pub extra: HashMap<String, Toml>,
 }
@@ -358,13 +361,14 @@ impl Default for Config {
     fn default() -> Config {
         Config {
             base_url: DEFAULT_BASE_URL.to_string(),
+            theme: None,
             title: None,
             description: None,
-            theme: None,
-            highlight_code: false,
-            highlight_theme: "base16-ocean-dark".to_string(),
             default_language: "en".to_string(),
             languages: Vec::new(),
+            translations: HashMap::new(),
+            highlight_code: false,
+            highlight_theme: "base16-ocean-dark".to_string(),
             generate_feed: false,
             feed_limit: None,
             feed_filename: "atom.xml".to_string(),
@@ -372,17 +376,17 @@ impl Default for Config {
             taxonomies: Vec::new(),
             compile_sass: false,
             minify_html: false,
-            mode: Mode::Build,
             build_search_index: false,
             ignored_content: Vec::new(),
             ignored_content_globset: None,
-            translations: HashMap::new(),
+            mode: Mode::Build,
             extra_syntaxes: Vec::new(),
             output_dir: "public".to_string(),
             link_checker: link_checker::LinkChecker::default(),
             slugify: slugify::Slugify::default(),
             search: search::Search::default(),
             markdown: markup::Markdown::default(),
+            plugins: Vec::new(),
             extra: HashMap::new(),
         }
     }

@@ -117,6 +117,10 @@ impl Site {
         Ok(site)
     }
 
+    fn load_plugins(&self) -> Result<Plugins> {
+        Plugins::load(&self.plugins_dir, &self.config.plugins)
+    }
+
     /// Enable some `zola serve` related options
     pub fn enable_serve_mode(&mut self) {
         SITE_CONTENT.write().unwrap().clear();
@@ -379,7 +383,7 @@ impl Site {
             .collect::<Vec<_>>()
             .par_iter_mut()
             .map(|page| {
-                let plugins = self.plugins.get_or_try(|| Plugins::read_dir(&self.plugins_dir))?;
+                let plugins = self.plugins.get_or_try(|| self.load_plugins())?;
                 let insert_anchor = pages_insert_anchors[&page.file.path];
                 page.render_markdown(permalinks, tera, config, &plugins, insert_anchor)
             })
@@ -391,7 +395,7 @@ impl Site {
             .collect::<Vec<_>>()
             .par_iter_mut()
             .map(|section| {
-                let plugins = self.plugins.get_or_try(|| Plugins::read_dir(&self.plugins_dir))?;
+                let plugins = self.plugins.get_or_try(|| self.load_plugins())?;
                 section.render_markdown(permalinks, tera, config, &plugins)
             })
             .collect::<Result<()>>()?;
@@ -402,7 +406,7 @@ impl Site {
     /// Add a page to the site
     /// The `render` parameter is used in the serve command with --fast, when rebuilding a page.
     pub fn add_page(&mut self, mut page: Page, render_md: bool) -> Result<()> {
-        let plugins = self.plugins.get_or_try(|| Plugins::read_dir(&self.plugins_dir))?;
+        let plugins = self.plugins.get_or_try(|| self.load_plugins())?;
         self.permalinks.insert(page.file.relative.clone(), page.permalink.clone());
         if render_md {
             let insert_anchor =
@@ -432,7 +436,7 @@ impl Site {
     /// Add a section to the site
     /// The `render` parameter is used in the serve command with --fast, when rebuilding a page.
     pub fn add_section(&mut self, mut section: Section, render_md: bool) -> Result<()> {
-        let plugins = self.plugins.get_or_try(|| Plugins::read_dir(&self.plugins_dir))?;
+        let plugins = self.plugins.get_or_try(|| self.load_plugins())?;
         self.permalinks.insert(section.file.relative.clone(), section.permalink.clone());
         if render_md {
             section.render_markdown(&self.permalinks, &self.tera, &self.config, &plugins)?;
