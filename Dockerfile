@@ -12,10 +12,12 @@ RUN cargo build --release --target x86_64-unknown-linux-gnu
 
 RUN mv target/x86_64-unknown-linux-gnu/release/zola /usr/bin
 RUN mkdir -p /workdir
+RUN mkdir -p /empty
 WORKDIR /workdir
 RUN dockerize -n  -o /workdir  /usr/bin/zola
 
 
 FROM scratch
+COPY --from=builder /empty /tmp
 COPY --from=builder /workdir .
 ENTRYPOINT [ "/usr/bin/zola" ]
