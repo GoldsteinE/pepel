@@ -1,16 +1,58 @@
+use std::path::PathBuf;
+
 use serde_derive::{Deserialize, Serialize};
 use syntect::parsing::SyntaxSet;
 
 pub const DEFAULT_HIGHLIGHT_THEME: &str = "base16-ocean-dark";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "highlight_type")]
+pub enum HighlighterSettings {
+    /// Produce "span with styles" highlighting
+    Inline {
+        /// Which themes to use for code highlighting. See Readme for supported themes
+        /// Defaults to "base16-ocean-dark"
+        #[serde(default = "inline_highlight_theme_default")]
+        highlight_theme: String,
+    },
+    /// Produce "span with classes" highlighting
+    Classed {
+        /// Which themes to use for code highlighting. See Readme for supported themes
+        /// Defaults to ["base16-ocean-dark"]
+        #[serde(default = "classed_highlight_theme_default")]
+        highlight_theme: Vec<String>,
+        /// Where to put theme CSS files
+        #[serde(default = "default_themes_path")]
+        themes_path: PathBuf,
+    },
+    /// Do not highlight code
+    #[serde(other)]
+    None,
+}
+
+fn inline_highlight_theme_default() -> String {
+    DEFAULT_HIGHLIGHT_THEME.to_owned()
+}
+
+fn classed_highlight_theme_default() -> Vec<String> {
+    vec![DEFAULT_HIGHLIGHT_THEME.to_owned()]
+}
+
+fn default_themes_path() -> PathBuf {
+    "themes".into()
+}
+
+impl Default for HighlighterSettings {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Markdown {
-    /// Whether to highlight all code blocks found in markdown files. Defaults to false
-    pub highlight_code: bool,
-    /// Which themes to use for code highlighting. See Readme for supported themes
-    /// Defaults to "base16-ocean-dark"
-    pub highlight_theme: String,
+    #[serde(flatten)]
+    pub highlighter: HighlighterSettings,
     /// Whether to render emoji aliases (e.g.: :smile: => 😄) in the markdown files
     pub render_emoji: bool,
     /// Whether external links are to be opened in a new tab
@@ -66,8 +108,7 @@ impl Markdown {
 impl Default for Markdown {
     fn default() -> Markdown {
         Markdown {
-            highlight_code: false,
-            highlight_theme: DEFAULT_HIGHLIGHT_THEME.to_owned(),
+            highlighter: HighlighterSettings::default(),
             render_emoji: false,
             external_links_target_blank: false,
             external_links_no_follow: false,

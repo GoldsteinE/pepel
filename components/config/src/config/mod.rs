@@ -13,10 +13,11 @@ use serde_derive::{Deserialize, Serialize};
 use syntect::parsing::SyntaxSetBuilder;
 use toml::Value as Toml;
 
-use crate::highlighting::THEME_SET;
 use crate::theme::Theme;
 use errors::{bail, Error, Result};
 use utils::fs::read_file_with_error;
+
+use self::markup::HighlighterSettings;
 
 // We want a default base url for tests
 static DEFAULT_BASE_URL: &str = "http://a-website.com";
@@ -54,12 +55,6 @@ pub struct Config {
     /// The attribute is intentionally not public, use `get_translation()` method for translating
     /// key into different language.
     translations: HashMap<String, languages::TranslateTerm>,
-
-    /// Whether to highlight all code blocks found in markdown files. Defaults to false
-    highlight_code: bool,
-    /// Which themes to use for code highlighting. See Readme for supported themes
-    /// Defaults to "base16-ocean-dark"
-    highlight_theme: String,
 
     /// Whether to generate a feed. Defaults to false.
     pub generate_feed: bool,
@@ -127,10 +122,6 @@ impl Config {
             bail!("A base URL is required in config.toml with key `base_url`");
         }
 
-        if !THEME_SET.themes.contains_key(&config.highlight_theme) {
-            bail!("Highlight theme {} not available", config.highlight_theme)
-        }
-
         if config.languages.iter().any(|l| l.code == config.default_language) {
             bail!("Default language `{}` should not appear both in `config.default_language` and `config.languages`", config.default_language)
         }
@@ -159,13 +150,6 @@ impl Config {
             }
         }
 
-        if config.highlight_code {
-            println!("`highlight_code` has been moved to a [markdown] section. Top level `highlight_code` and `highlight_theme` will stop working in 0.14.");
-        }
-        if !config.extra_syntaxes.is_empty() {
-            println!("`extra_syntaxes` has been moved to a [markdown] section. Top level `extra_syntaxes` will stop working in 0.14.");
-        }
-
         Ok(config)
     }
 
@@ -180,53 +164,16 @@ impl Config {
         Config::parse(&content)
     }
 
-    /// Temporary, while we have the settings in 2 places
-    /// TODO: remove me in 0.14
-    pub fn highlight_code(&self) -> bool {
-        if !self.highlight_code && !self.markdown.highlight_code {
-            return false;
-        }
-
-        if self.highlight_code {
-            true
-        } else {
-            self.markdown.highlight_code
-        }
-    }
-
-    /// Temporary, while we have the settings in 2 places
-    /// TODO: remove me in 0.14
-    pub fn highlight_theme(&self) -> &str {
-        if self.highlight_theme != markup::DEFAULT_HIGHLIGHT_THEME {
-            &self.highlight_theme
-        } else {
-            &self.markdown.highlight_theme
-        }
-    }
-
-    /// TODO: remove me in 0.14
-    pub fn extra_syntaxes(&self) -> Vec<String> {
-        if !self.markdown.extra_syntaxes.is_empty() {
-            return self.markdown.extra_syntaxes.clone();
-        }
-
-        if !self.extra_syntaxes.is_empty() {
-            return self.extra_syntaxes.clone();
-        }
-
-        Vec::new()
-    }
-
     /// Attempt to load any extra syntax found in the extra syntaxes of the config
     /// TODO: move to markup.rs in 0.14
     pub fn load_extra_syntaxes(&mut self, base_path: &Path) -> Result<()> {
-        let extra_syntaxes = self.extra_syntaxes();
+        let extra_syntaxes = &self.markdown.extra_syntaxes;
         if extra_syntaxes.is_empty() {
             return Ok(());
         }
 
         let mut ss = SyntaxSetBuilder::new();
-        for dir in &extra_syntaxes {
+        for dir in extra_syntaxes {
             ss.add_from_folder(base_path.join(dir), true)?;
         }
         self.markdown.extra_syntax_set = Some(ss.build());
@@ -308,7 +255,7 @@ impl Config {
         self.mode = Mode::Check;
         // Disable syntax highlighting since the results won't be used
         // and this operation can be expensive.
-        self.highlight_code = false;
+        self.markdown.highlighter = HighlighterSettings::None;
     }
 
     pub fn get_translation<S: AsRef<str>>(&self, lang: S, key: S) -> Result<String> {
@@ -367,8 +314,6 @@ impl Default for Config {
             default_language: "en".to_string(),
             languages: Vec::new(),
             translations: HashMap::new(),
-            highlight_code: false,
-            highlight_theme: "base16-ocean-dark".to_string(),
             generate_feed: false,
             feed_limit: None,
             feed_filename: "atom.xml".to_string(),

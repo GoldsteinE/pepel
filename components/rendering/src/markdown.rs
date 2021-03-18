@@ -1,11 +1,10 @@
 use lazy_static::lazy_static;
 use pulldown_cmark as cmark;
 use regex::Regex;
-use syntect::html::{start_highlighted_html_snippet, IncludeBackground};
 
 use crate::context::RenderContext;
 use crate::table_of_contents::{make_table_of_contents, Heading};
-use config::highlighting::THEME_SET;
+use config::highlighting::highlight_code;
 use errors::{Error, Result};
 use front_matter::InsertAnchor;
 use utils::site::resolve_internal_link;
@@ -13,10 +12,6 @@ use utils::slugs::slugify_anchors;
 use utils::vec::InsertMany;
 
 use self::cmark::{Event, LinkType, Options, Parser, Tag};
-
-mod codeblock;
-mod fence;
-use self::codeblock::CodeBlock;
 
 const CONTINUE_READING: &str = "<span id=\"continue-reading\"></span>";
 const ANCHOR_LINK_TEMPLATE: &str = "anchor-link.html";
@@ -171,8 +166,6 @@ pub fn markdown_to_html(content: &str, context: &RenderContext) -> Result<Render
     // Set while parsing
     let mut error = None;
 
-    let mut highlighter: Option<CodeBlock> = None;
-
     let mut inserted_anchors: Vec<String> = vec![];
     let mut headings: Vec<Heading> = vec![];
     let mut internal_links_with_anchors = Vec::new();
@@ -181,6 +174,7 @@ pub fn markdown_to_html(content: &str, context: &RenderContext) -> Result<Render
     let mut opts = Options::empty();
     let mut has_summary = false;
     let mut in_html_block = false;
+    let mut code_block_text: Option<String> = None;
     opts.insert(Options::ENABLE_TABLES);
     opts.insert(Options::ENABLE_FOOTNOTES);
     opts.insert(Options::ENABLE_STRIKETHROUGH);
@@ -195,86 +189,43 @@ pub fn markdown_to_html(content: &str, context: &RenderContext) -> Result<Render
             match event {
                 Event::Text(text) => {
                     // if we are in the middle of a highlighted code block
-                    if let Some(ref mut code_block) = highlighter {
-                        let html = code_block.highlight(&text);
-                        Event::Html(html.into())
+                    if let Some(code_block_text) = &mut code_block_text {
+                        code_block_text.push_str(&text);
+                        None
                     } else if context.config.markdown.render_emoji {
                         let processed_text = EMOJI_REPLACER.replace_all(&text);
-                        Event::Text(processed_text.to_string().into())
+                        Some(Event::Text(processed_text.to_string().into()))
                     } else {
                         // Business as usual
-                        Event::Text(text)
+                        Some(Event::Text(text))
                     }
                 }
-                Event::Start(Tag::CodeBlock(ref kind)) => {
+                Event::Start(Tag::CodeBlock(_)) => {
+                    code_block_text = Some(String::new());
+                    None
+                }
+                Event::End(Tag::CodeBlock(ref kind)) => {
                     let language = match kind {
-                        cmark::CodeBlockKind::Fenced(fence_info) => {
-                            let fence_info = fence::FenceSettings::new(fence_info);
-                            fence_info.language
-                        }
-                        _ => None,
-                    };
-
-                    if !context.config.highlight_code() {
-                        if let Some(lang) = language {
-                            let html = format!(
-                                r#"<pre><code class="language-{}" data-lang="{}">"#,
-                                lang, lang
-                            );
-                            return Event::Html(html.into());
-                        }
-                        return Event::Html("<pre><code>".into());
-                    }
-
-                    let theme = &THEME_SET.themes[context.config.highlight_theme()];
-                    match kind {
-                        cmark::CodeBlockKind::Indented => (),
-                        cmark::CodeBlockKind::Fenced(fence_info) => {
-                            // This selects the background color the same way that
-                            // start_coloured_html_snippet does
-                            let color = theme
-                                .settings
-                                .background
-                                .unwrap_or(::syntect::highlighting::Color::WHITE);
-
-                            highlighter = Some(CodeBlock::new(
-                                fence_info,
-                                &context.config,
-                                IncludeBackground::IfDifferent(color),
-                            ));
+                        cmark::CodeBlockKind::Indented => None,
+                        cmark::CodeBlockKind::Fenced(info) if info.is_empty() => None,
+                        cmark::CodeBlockKind::Fenced(info) => {
+                            Some(info.split(',').next().unwrap_or(info))
                         }
                     };
-                    let snippet = start_highlighted_html_snippet(theme);
-                    let mut html = snippet.0;
-                    if let Some(lang) = language {
-                        html.push_str(&format!(
-                            r#"<code class="language-{}" data-lang="{}">"#,
-                            lang, lang
-                        ));
-                    } else {
-                        html.push_str("<code>");
-                    }
-                    Event::Html(html.into())
-                }
-                Event::End(Tag::CodeBlock(_)) => {
-                    if !context.config.highlight_code() {
-                        return Event::Html("</code></pre>\n".into());
-                    }
-                    // reset highlight and close the code block
-                    highlighter = None;
-                    Event::Html("</code></pre>".into())
+                    let text = code_block_text.take().expect("codeblock ended but not started");
+                    Some(Event::Html(highlight_code(&context.config, language, text).into()))
                 }
                 Event::Start(Tag::Image(link_type, src, title)) => {
                     if is_colocated_asset_link(&src) {
                         let link = format!("{}{}", context.current_page_permalink, &*src);
-                        return Event::Start(Tag::Image(link_type, link.into(), title));
+                        Some(Event::Start(Tag::Image(link_type, link.into(), title)))
+                    } else {
+                        Some(Event::Start(Tag::Image(link_type, src, title)))
                     }
-
-                    Event::Start(Tag::Image(link_type, src, title))
                 }
                 Event::Start(Tag::Link(link_type, link, title)) if link.is_empty() => {
                     error = Some(Error::msg("There is a link that is missing a URL"));
-                    Event::Start(Tag::Link(link_type, "#".into(), title))
+                    Some(Event::Start(Tag::Link(link_type, "#".into(), title)))
                 }
                 Event::Start(Tag::Link(link_type, link, title)) => {
                     let fixed_link = match fix_link(
@@ -287,7 +238,7 @@ pub fn markdown_to_html(content: &str, context: &RenderContext) -> Result<Render
                         Ok(fixed_link) => fixed_link,
                         Err(err) => {
                             error = Some(err);
-                            return Event::Html("".into());
+                            return Some(Event::Html("".into()));
                         }
                     };
                     if is_external_link(&link) && context.config.markdown.has_external_link_tweaks()
@@ -296,38 +247,38 @@ pub fn markdown_to_html(content: &str, context: &RenderContext) -> Result<Render
                         // write_str can fail but here there are no reasons it should (afaik?)
                         cmark::escape::escape_href(&mut escaped, &link)
                             .expect("Could not write to buffer");
-                        Event::Html(
+                        Some(Event::Html(
                             context
                                 .config
                                 .markdown
                                 .construct_external_link_tag(&escaped, &title)
                                 .into(),
-                        )
+                        ))
                     } else {
-                        Event::Start(Tag::Link(link_type, fixed_link.into(), title))
+                        Some(Event::Start(Tag::Link(link_type, fixed_link.into(), title)))
                     }
                 }
                 Event::Html(ref markup) => {
                     if markup.contains("<!-- more -->") {
                         has_summary = true;
-                        Event::Html(CONTINUE_READING.into())
+                        Some(Event::Html(CONTINUE_READING.into()))
                     } else if in_html_block && markup.contains("</pre>") {
                         in_html_block = false;
-                        Event::Html(markup.replacen("</pre>", "", 1).into())
+                        Some(Event::Html(markup.replacen("</pre>", "", 1).into()))
                     } else if markup.contains("pre data-shortcode") {
                         in_html_block = true;
                         let m = markup.replacen("<pre data-shortcode>", "", 1);
                         if m.contains("</pre>") {
                             in_html_block = false;
-                            Event::Html(m.replacen("</pre>", "", 1).into())
+                            Some(Event::Html(m.replacen("</pre>", "", 1).into()))
                         } else {
-                            Event::Html(m.into())
+                            Some(Event::Html(m.into()))
                         }
                     } else {
-                        event
+                        Some(event)
                     }
                 }
-                _ => event,
+                _ => Some(event),
             }
         };
         let mut events = Parser::new_ext(content, opts).try_fold(
@@ -336,7 +287,10 @@ pub fn markdown_to_html(content: &str, context: &RenderContext) -> Result<Render
                 match &context.plugins {
                     Some(plugins) => {
                         acc.extend(
-                            plugins.process_event(event)?.into_iter().map(&mut preprocess_event),
+                            plugins
+                                .process_event(event)?
+                                .into_iter()
+                                .filter_map(&mut preprocess_event),
                         );
                     }
                     None => {

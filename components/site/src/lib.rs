@@ -11,14 +11,16 @@ use std::sync::{Arc, Mutex, RwLock};
 
 use lazy_static::lazy_static;
 use rayon::prelude::*;
+use syntect::html::ClassStyle;
 use tera::{Context, Tera};
-use walkdir::{DirEntry, WalkDir};
 use thread_local::ThreadLocal;
+use walkdir::{DirEntry, WalkDir};
 
-use config::{get_config, Config};
+use config::{get_config, highlighting::THEME_SET, Config, HighlighterSettings};
 use errors::{bail, Error, Result};
 use front_matter::InsertAnchor;
 use library::{find_taxonomies, Library, Page, Paginator, Section, Taxonomy};
+use plugins::Plugins;
 use relative_path::RelativePathBuf;
 use std::time::Instant;
 use templates::render_redirect_template;
@@ -28,7 +30,6 @@ use utils::fs::{
 use utils::minify;
 use utils::net::get_available_port;
 use utils::templates::render_template;
-use plugins::Plugins;
 
 lazy_static! {
     /// The in-memory rendered map content
@@ -411,7 +412,13 @@ impl Site {
         if render_md {
             let insert_anchor =
                 self.find_parent_section_insert_anchor(&page.file.parent, &page.lang);
-            page.render_markdown(&self.permalinks, &self.tera, &self.config, &plugins, insert_anchor)?;
+            page.render_markdown(
+                &self.permalinks,
+                &self.tera,
+                &self.config,
+                &plugins,
+                insert_anchor,
+            )?;
         }
 
         let mut library = self.library.write().expect("Get lock for add_page");
@@ -641,13 +648,36 @@ impl Site {
         if let Some(ref theme) = self.config.theme {
             let theme_path = self.base_path.join("themes").join(theme);
             if theme_path.join("sass").exists() {
-                sass::compile_sass(&theme_path, &self.output_path)?;
+                sass::compile_sass(&theme_path, &self.output_path, None)?;
                 start = log_time(start, "Compiled theme Sass");
             }
         }
 
         if self.config.compile_sass {
-            sass::compile_sass(&self.base_path, &self.output_path)?;
+            if let HighlighterSettings::Classed { highlight_theme, themes_path } =
+                &self.config.markdown.highlighter
+            {
+                let tmp_dir = tempfile::tempdir()?;
+                let themes_dir = tmp_dir.path().join(themes_path);
+                std::fs::create_dir(&themes_dir)?;
+                for theme_name in highlight_theme {
+                    let theme = &THEME_SET.themes[theme_name];
+                    let theme_css = syntect::html::css_for_theme_with_class_style(
+                        theme,
+                        ClassStyle::SpacedPrefixed { prefix: "zola-hl-" },
+                    );
+                    let mut theme_file_name = themes_dir.join(theme_name);
+                    theme_file_name.set_extension("css");
+                    std::fs::write(theme_file_name, theme_css);
+                }
+                sass::compile_sass(
+                    &self.base_path,
+                    &self.output_path,
+                    Some(tmp_dir.path().to_str().expect("tempdir paths are UTF-8").to_owned()),
+                )?;
+            } else {
+                sass::compile_sass(&self.base_path, &self.output_path, None)?;
+            }
             start = log_time(start, "Compiled own Sass");
         }
 

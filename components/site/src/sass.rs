@@ -7,7 +7,7 @@ use sass_rs::{compile_file, Options, OutputStyle};
 use errors::{bail, Result};
 use utils::fs::{create_file, ensure_directory_exists};
 
-pub fn compile_sass(base_path: &Path, output_path: &Path) -> Result<()> {
+pub fn compile_sass(base_path: &Path, output_path: &Path, tmp_path: Option<String>) -> Result<()> {
     ensure_directory_exists(&output_path)?;
 
     let sass_path = {
@@ -16,9 +16,15 @@ pub fn compile_sass(base_path: &Path, output_path: &Path) -> Result<()> {
         sass_path
     };
 
+    let mut compiled_paths = Vec::new();
     let mut options = Options::default();
     options.output_style = OutputStyle::Compressed;
-    let mut compiled_paths = compile_sass_glob(&sass_path, output_path, "scss", &options)?;
+    if let Some(path) = tmp_path {
+        compiled_paths.extend(compile_sass_glob(path.as_ref(), output_path, "css", &options)?);
+        options.include_paths.push(path);
+    }
+
+    compiled_paths.extend(compile_sass_glob(&sass_path, output_path, "scss", &options)?);
 
     options.indented_syntax = true;
     compiled_paths.extend(compile_sass_glob(&sass_path, output_path, "sass", &options)?);
