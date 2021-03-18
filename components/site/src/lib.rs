@@ -635,6 +635,22 @@ impl Site {
         Ok(())
     }
 
+    fn write_themes(&self, themes_dir: &Path, themes: &[String]) -> Result<()> {
+        std::fs::create_dir_all(&themes_dir)?;
+        for theme_name in themes {
+            let theme = &THEME_SET.themes[theme_name];
+            let theme_css = syntect::html::css_for_theme_with_class_style(
+                theme,
+                ClassStyle::SpacedPrefixed { prefix: "zola-hl-" },
+            );
+            let mut theme_file_name = themes_dir.join(theme_name);
+            theme_file_name.set_extension("css");
+            std::fs::write(theme_file_name, theme_css)?;
+        }
+
+        Ok(())
+    }
+
     /// Deletes the `public` directory (only for `zola build`) and builds the site
     pub fn build(&self) -> Result<()> {
         let mut start = Instant::now();
@@ -659,17 +675,7 @@ impl Site {
             {
                 let tmp_dir = tempfile::tempdir()?;
                 let themes_dir = tmp_dir.path().join(themes_path);
-                std::fs::create_dir(&themes_dir)?;
-                for theme_name in highlight_theme {
-                    let theme = &THEME_SET.themes[theme_name];
-                    let theme_css = syntect::html::css_for_theme_with_class_style(
-                        theme,
-                        ClassStyle::SpacedPrefixed { prefix: "zola-hl-" },
-                    );
-                    let mut theme_file_name = themes_dir.join(theme_name);
-                    theme_file_name.set_extension("css");
-                    std::fs::write(theme_file_name, theme_css);
-                }
+                self.write_themes(&themes_dir, highlight_theme)?;
                 sass::compile_sass(
                     &self.base_path,
                     &self.output_path,
@@ -679,6 +685,13 @@ impl Site {
                 sass::compile_sass(&self.base_path, &self.output_path, None)?;
             }
             start = log_time(start, "Compiled own Sass");
+        } else {
+            if let HighlighterSettings::Classed { highlight_theme, themes_path } =
+                &self.config.markdown.highlighter
+            {
+                let themes_dir = self.output_path.join(themes_path);
+                self.write_themes(&themes_dir, highlight_theme)?;
+            }
         }
 
         if self.config.build_search_index {
