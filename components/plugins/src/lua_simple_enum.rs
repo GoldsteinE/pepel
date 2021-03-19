@@ -29,7 +29,10 @@ impl<'lua, T: SimpleEnum> mlua::FromLua<'lua> for LuaSimpleEnum<T> {
                 Err(mlua::Error::FromLuaConversionError {
                     from: lua_value.type_name(),
                     to: T::ENUM_NAME,
-                    message: Some(format!("invalid variant `{}`", String::from_utf8_lossy(s.as_bytes()))),
+                    message: Some(format!(
+                        "invalid variant `{}`",
+                        String::from_utf8_lossy(s.as_bytes())
+                    )),
                 })
             }
         } else {

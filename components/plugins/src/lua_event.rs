@@ -1,5 +1,5 @@
-use pulldown_cmark::Event;
 use mlua::MetaMethod;
+use pulldown_cmark::Event;
 
 use crate::lua_tag::LuaTag;
 
@@ -46,7 +46,7 @@ impl mlua::UserData for LuaEvent {
             is_soft_break: Event::SoftBreak,
             is_hard_break: Event::HardBreak,
             is_rule: Event::Rule,
-            is_task_list_marker: Event::TaskListMarker(_), 
+            is_task_list_marker: Event::TaskListMarker(_),
         });
 
         impl_lua_unwrap_str!(methods => {

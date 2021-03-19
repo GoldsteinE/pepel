@@ -37,6 +37,7 @@ use chrono::prelude::*;
 use notify::{watcher, RecursiveMode, Watcher};
 use ws::{Message, Sender, WebSocket};
 
+use config::HighlighterSettings;
 use errors::{Error as ZolaError, Result};
 use globset::GlobSet;
 use relative_path::{RelativePath, RelativePathBuf};
@@ -396,11 +397,21 @@ pub fn serve(
             format!("-> Sass file changed {}", path.display())
         };
         console::info(&msg);
-        rebuild_done_handling(
-            &broadcaster,
-            compile_sass(&site.base_path, &site.output_path, None),
-            &partial_path.to_string_lossy(),
-        );
+
+        let res = match &site.config.markdown.highlighter {
+            HighlighterSettings::Classed { highlight_theme, themes_path } => (|| {
+                let tmp_dir = tempfile::tempdir()?;
+                let themes_dir = tmp_dir.path().join(themes_path);
+                site.write_themes(&themes_dir, highlight_theme)?;
+                compile_sass(
+                    &site.base_path,
+                    &site.output_path,
+                    Some(tmp_dir.path().to_str().expect("tempdir paths are UTF-8").to_owned()),
+                )
+            })(),
+            _ => compile_sass(&site.base_path, &site.output_path, None),
+        };
+        rebuild_done_handling(&broadcaster, res, &partial_path.to_string_lossy());
     };
 
     let reload_templates = |site: &mut Site, path: &Path| {

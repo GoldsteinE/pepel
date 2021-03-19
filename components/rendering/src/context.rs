@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use plugins::Plugins;
 use config::Config;
 use front_matter::InsertAnchor;
+use plugins::Plugins;
 use tera::{Context, Tera};
 
 /// All the information from the zola site that is needed to render HTML from markdown

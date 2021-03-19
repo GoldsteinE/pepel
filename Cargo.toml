@@ -42,6 +42,8 @@ site = { path = "components/site" }
 errors = { path = "components/errors" }
 front_matter = { path = "components/front_matter" }
 utils = { path = "components/utils" }
+config = { path = "components/config/" }
+tempfile = "3.2.0"
 
 [workspace]
 members = [

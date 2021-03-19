@@ -635,7 +635,7 @@ impl Site {
         Ok(())
     }
 
-    fn write_themes(&self, themes_dir: &Path, themes: &[String]) -> Result<()> {
+    pub fn write_themes(&self, themes_dir: &Path, themes: &[String]) -> Result<()> {
         std::fs::create_dir_all(&themes_dir)?;
         for theme_name in themes {
             let theme = &THEME_SET.themes[theme_name];
@@ -685,13 +685,11 @@ impl Site {
                 sass::compile_sass(&self.base_path, &self.output_path, None)?;
             }
             start = log_time(start, "Compiled own Sass");
-        } else {
-            if let HighlighterSettings::Classed { highlight_theme, themes_path } =
-                &self.config.markdown.highlighter
-            {
-                let themes_dir = self.output_path.join(themes_path);
-                self.write_themes(&themes_dir, highlight_theme)?;
-            }
+        } else if let HighlighterSettings::Classed { highlight_theme, themes_path } =
+            &self.config.markdown.highlighter
+        {
+            let themes_dir = self.output_path.join(themes_path);
+            self.write_themes(&themes_dir, highlight_theme)?;
         }
 
         if self.config.build_search_index {

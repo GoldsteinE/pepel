@@ -6,9 +6,9 @@ use pulldown_cmark::Event;
 #[macro_use]
 mod macros;
 mod lua_event;
+mod lua_event_module;
 mod lua_simple_enum;
 mod lua_tag;
-mod lua_event_module;
 mod lua_tag_module;
 
 use crate::{lua_event::LuaEvent, lua_event_module::LuaEventModule, lua_tag_module::LuaTagModule};

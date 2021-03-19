@@ -36,9 +36,8 @@ impl mlua::UserData for LuaEventModule {
             Ok(LuaEvent(Event::HardBreak))
         });
 
-        methods.add_method("rule", |_, _, ()| -> mlua::Result<LuaEvent> {
-            Ok(LuaEvent(Event::Rule))
-        });
+        methods
+            .add_method("rule", |_, _, ()| -> mlua::Result<LuaEvent> { Ok(LuaEvent(Event::Rule)) });
 
         methods.add_method("task_list_marker", |_, _, set: bool| -> mlua::Result<LuaEvent> {
             Ok(LuaEvent(Event::TaskListMarker(set)))

@@ -7,11 +7,11 @@ use tera::{Context as TeraContext, Tera};
 use config::Config;
 use errors::{Error, Result};
 use front_matter::{split_section_content, SectionFrontMatter};
+use plugins::Plugins;
 use rendering::{render_content, Heading, RenderContext};
 use utils::fs::{find_related_assets, read_file};
 use utils::site::get_reading_analytics;
 use utils::templates::render_template;
-use plugins::Plugins;
 
 use crate::content::file_info::FileInfo;
 use crate::content::has_anchor;

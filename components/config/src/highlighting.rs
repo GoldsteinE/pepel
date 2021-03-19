@@ -17,14 +17,19 @@ lazy_static! {
 }
 
 // FIXME: unneccesary move
-fn wrap_pre_code(language: Option<&str>, mut code: String) -> String {
+fn wrap_pre_code(language: Option<&str>, mut code: String, classed: bool) -> String {
     let lang_prefix;
-    let prefix = match language {
-        Some(language) => {
-            lang_prefix = format!(r#"<pre><code class="language-{0}" data-lang="{0}">"#, language);
+    let prefix = match (language, classed) {
+        (Some(language), _) => {
+            lang_prefix = format!(
+                r#"<pre{1}><code class="language-{0}" data-lang="{0}">"#,
+                language,
+                if classed { r#" class="zola-hl-code"# } else { "" }
+            );
             lang_prefix.as_str()
         }
-        None => r#"<pre><code>"#,
+        (None, false) => r#"<pre><code>"#,
+        (None, true) => r#"<pre class="zola-hl-code"><code>"#,
     };
     code.insert_str(0, prefix);
     code.push_str("</code></pre>");
