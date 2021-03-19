@@ -24,7 +24,7 @@ fn wrap_pre_code(language: Option<&str>, mut code: String, classed: bool) -> Str
             lang_prefix = format!(
                 r#"<pre{1}><code class="language-{0}" data-lang="{0}">"#,
                 language,
-                if classed { r#" class="zola-hl-code"# } else { "" }
+                if classed { r#" class="zola-hl-code""# } else { "" }
             );
             lang_prefix.as_str()
         }
@@ -59,9 +59,9 @@ pub fn highlight_code(config: &Config, language: Option<&str>, code: String) -> 
                 hl.parse_html_for_line_which_includes_newline(line);
             }
 
-            wrap_pre_code(language, hl.finalize())
+            wrap_pre_code(language, hl.finalize(), true)
         }
-        HighlighterSettings::None => wrap_pre_code(language, code),
+        HighlighterSettings::None => wrap_pre_code(language, code, false),
     }
 }
 
