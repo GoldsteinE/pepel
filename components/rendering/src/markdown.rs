@@ -281,8 +281,15 @@ pub fn markdown_to_html(content: &str, context: &RenderContext) -> Result<Render
                 _ => Some(event),
             }
         };
+
+        let starting_events = match &context.plugins {
+            Some(plugins) => {
+                plugins.content_start()?.into_iter().filter_map(&mut preprocess_event).collect()
+            }
+            None => Vec::new(),
+        };
         let mut events = Parser::new_ext(content, opts).try_fold(
-            Vec::new(),
+            starting_events,
             |mut acc, event| -> Result<Vec<Event>> {
                 match &context.plugins {
                     Some(plugins) => {
@@ -300,6 +307,9 @@ pub fn markdown_to_html(content: &str, context: &RenderContext) -> Result<Render
                 Ok(acc)
             },
         )?;
+        if let Some(plugins) = &context.plugins {
+            events.extend(plugins.content_end()?.into_iter().filter_map(&mut preprocess_event));
+        };
 
         let mut heading_refs = get_heading_refs(&events);
 

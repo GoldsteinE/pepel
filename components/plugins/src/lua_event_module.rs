@@ -9,38 +9,39 @@ pub struct LuaEventModule;
 impl mlua::UserData for LuaEventModule {
     fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method("tag_start", |_lua, _this, tag: LuaTag| -> mlua::Result<LuaEvent> {
-            Ok(LuaEvent(Event::Start(tag.0)))
+            Ok(Event::Start(tag.0).into())
         });
 
         methods.add_method("tag_end", |_, _, tag: LuaTag| -> mlua::Result<LuaEvent> {
-            Ok(LuaEvent(Event::End(tag.0)))
+            Ok(Event::End(tag.0).into())
         });
 
         methods.add_method("text", |_, _, text: String| -> mlua::Result<LuaEvent> {
-            Ok(LuaEvent(Event::Text(CowStr::Boxed(text.into_boxed_str()))))
+            Ok(Event::Text(CowStr::Boxed(text.into_boxed_str())).into())
         });
 
         methods.add_method("html", |_, _, html: String| -> mlua::Result<LuaEvent> {
-            Ok(LuaEvent(Event::Html(CowStr::Boxed(html.into_boxed_str()))))
+            Ok(Event::Html(CowStr::Boxed(html.into_boxed_str())).into())
         });
 
         methods.add_method("footnote_reference", |_, _, fref: String| -> mlua::Result<LuaEvent> {
-            Ok(LuaEvent(Event::FootnoteReference(CowStr::Boxed(fref.into_boxed_str()))))
+            Ok(Event::FootnoteReference(CowStr::Boxed(fref.into_boxed_str())).into())
         });
 
         methods.add_method("soft_break", |_, _, ()| -> mlua::Result<LuaEvent> {
-            Ok(LuaEvent(Event::SoftBreak))
+            Ok(Event::SoftBreak.into())
         });
 
         methods.add_method("hard_break", |_, _, ()| -> mlua::Result<LuaEvent> {
-            Ok(LuaEvent(Event::HardBreak))
+            Ok(Event::HardBreak.into())
         });
 
-        methods
-            .add_method("rule", |_, _, ()| -> mlua::Result<LuaEvent> { Ok(LuaEvent(Event::Rule)) });
+        methods.add_method("rule", |_, _, ()| -> mlua::Result<LuaEvent> {
+            Ok(Event::Rule.into())
+        });
 
         methods.add_method("task_list_marker", |_, _, set: bool| -> mlua::Result<LuaEvent> {
-            Ok(LuaEvent(Event::TaskListMarker(set)))
+            Ok(Event::TaskListMarker(set).into())
         });
     }
 }

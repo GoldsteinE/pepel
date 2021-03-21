@@ -11,7 +11,7 @@ mod lua_simple_enum;
 mod lua_tag;
 mod lua_tag_module;
 
-use crate::{lua_event::LuaEvent, lua_event_module::LuaEventModule, lua_tag_module::LuaTagModule};
+use crate::{lua_event::{LuaEvent, LuaEventKind}, lua_event_module::LuaEventModule, lua_tag_module::LuaTagModule};
 
 pub struct Plugins {
     lua: mlua::Lua,
@@ -40,8 +40,8 @@ impl Plugins {
         Ok(Self { lua, markdown_hooks })
     }
 
-    pub fn process_event<'a>(&self, ev: Event<'a>) -> Result<impl IntoIterator<Item = Event<'a>>> {
-        let mut in_buf = vec![LuaEvent::from(ev)];
+    fn process_lua_event(&self, ev: LuaEvent) -> Result<impl IntoIterator<Item = Event<'static>>> {
+        let mut in_buf = vec![ev];
         let mut out_buf = Vec::new();
 
         for hook_key in &self.markdown_hooks {
@@ -54,7 +54,19 @@ impl Plugins {
             out_buf = Vec::new();
         }
 
-        Ok(in_buf.into_iter().map(|LuaEvent(ev)| ev))
+        Ok(in_buf.into_iter().filter_map(|ev| ev.into()))
+    }
+
+    pub fn process_event<'a>(&self, ev: Event<'a>) -> Result<impl IntoIterator<Item = Event<'static>>> {
+        self.process_lua_event(ev.into())
+    }
+
+    pub fn content_start(&self) -> Result<impl IntoIterator<Item = Event<'static>>> {
+        self.process_lua_event(LuaEvent(LuaEventKind::ContentStart))
+    }
+
+    pub fn content_end(&self) -> Result<impl IntoIterator<Item = Event<'static>>> {
+        self.process_lua_event(LuaEvent(LuaEventKind::ContentEnd))
     }
 }
 

@@ -56,6 +56,7 @@ enum ChangeKind {
     StaticFiles,
     Sass,
     Config,
+    Plugin,
 }
 
 #[derive(Debug, PartialEq)]
@@ -576,6 +577,13 @@ pub fn serve(
                                     site = s;
                                 }
                             }
+                            (ChangeKind::Plugin, p) => {
+                                console::info(&format!("-> Plugin changed {}", p.display()));
+
+                                if let Some(s) = recreate_site() {
+                                    site = s;
+                                }
+                            }
                         };
                         console::report_elapsed_time(start);
                     }
@@ -639,6 +647,8 @@ fn detect_change_kind(pwd: &Path, path: &Path) -> (ChangeKind, PathBuf) {
         ChangeKind::Sass
     } else if partial_path == Path::new("/config.toml") {
         ChangeKind::Config
+    } else if partial_path.starts_with("/plugins") {
+        ChangeKind::Plugin
     } else {
         unreachable!("Got a change in an unexpected path: {}", partial_path.display());
     };

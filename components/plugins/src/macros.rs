@@ -21,6 +21,23 @@ macro_rules! impl_lua_unwrap_str {
             });
         )*
     };
+
+    ($methods:ident => { $($as_method:ident: $ident:ident = $variant:path | $upper:pat,)* }) => {
+        $(
+            // FIXME: is there a way to pass borrowed string?
+            $methods.add_method(stringify!($as_method), |_, this, ()| -> mlua::Result<Option<String>> {
+                if let $upper = &this {
+                    if let $variant(inner) = $ident {
+                        Ok(Some(inner.as_ref().to_owned()))
+                    } else {
+                        Ok(None)
+                    }
+                } else {
+                    Ok(None)
+                }
+            });
+        )*
+    };
 }
 
 macro_rules! impl_lua_unwrap_value {
