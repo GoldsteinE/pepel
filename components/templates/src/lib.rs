@@ -19,7 +19,6 @@ lazy_static! {
                 "__zola_builtins/split_sitemap_index.xml",
                 include_str!("builtins/split_sitemap_index.xml"),
             ),
-            ("__zola_builtins/anchor-link.html", include_str!("builtins/anchor-link.html")),
             (
                 "__zola_builtins/shortcodes/youtube.html",
                 include_str!("builtins/shortcodes/youtube.html"),

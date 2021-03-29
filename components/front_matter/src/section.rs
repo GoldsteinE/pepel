@@ -1,7 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 use tera::{Map, Value};
 
-use super::{InsertAnchor, SortBy};
+use super::SortBy;
 use errors::Result;
 use utils::de::fix_toml_dates;
 
@@ -38,9 +38,6 @@ pub struct SectionFrontMatter {
     /// Path to be used by pagination: the page number will be appended after it. Defaults to `page`.
     #[serde(skip_serializing)]
     pub paginate_path: String,
-    /// Whether to insert a link for each header like the ones you can see in this site if you hover one
-    /// The default template can be overridden by creating a `anchor-link.html` in the `templates` directory
-    pub insert_anchor_links: InsertAnchor,
     /// Whether to render that section or not. Defaults to `true`.
     /// Useful when the section is only there to organize things but is not meant
     /// to be used directly, like a posts section in a personal site
@@ -108,7 +105,6 @@ impl Default for SectionFrontMatter {
             paginate_path: DEFAULT_PAGINATE_PATH.to_string(),
             render: true,
             redirect_to: None,
-            insert_anchor_links: InsertAnchor::None,
             in_search_index: true,
             transparent: false,
             page_template: None,

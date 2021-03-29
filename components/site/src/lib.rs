@@ -18,7 +18,6 @@ use walkdir::{DirEntry, WalkDir};
 
 use config::{get_config, highlighting::THEME_SET, Config, HighlighterSettings};
 use errors::{bail, Error, Result};
-use front_matter::InsertAnchor;
 use library::{find_taxonomies, Library, Page, Paginator, Section, Taxonomy};
 use plugins::Plugins;
 use relative_path::RelativePathBuf;
@@ -183,7 +182,6 @@ impl Site {
         let base_path = self.base_path.to_string_lossy().replace("\\", "/");
 
         self.library = Arc::new(RwLock::new(Library::new(0, 0, self.config.is_multilingual())));
-        let mut pages_insert_anchors = HashMap::new();
 
         // not the most elegant loop, but this is necessary to use skip_current_dir
         // which we can only decide to use after we've deserialised the section
@@ -281,10 +279,6 @@ impl Site {
                 if page.meta.draft && !self.include_drafts {
                     continue;
                 }
-                pages_insert_anchors.insert(
-                    page.file.path.clone(),
-                    self.find_parent_section_insert_anchor(&page.file.parent.clone(), &page.lang),
-                );
                 self.add_page(page, false)?;
             }
         }
@@ -367,15 +361,6 @@ impl Site {
         let tera = &self.tera;
         let config = &self.config;
 
-        // This is needed in the first place because of silly borrow checker
-        let mut pages_insert_anchors = HashMap::new();
-        for (_, p) in self.library.read().unwrap().pages() {
-            pages_insert_anchors.insert(
-                p.file.path.clone(),
-                self.find_parent_section_insert_anchor(&p.file.parent.clone(), &p.lang),
-            );
-        }
-
         let mut library = self.library.write().expect("Get lock for render_markdown");
         // FIXME: This breaks parallel compilation of pages. Maybe make plugins thread-local?
         library
@@ -385,8 +370,7 @@ impl Site {
             .par_iter_mut()
             .map(|page| {
                 let plugins = self.plugins.get_or_try(|| self.load_plugins())?;
-                let insert_anchor = pages_insert_anchors[&page.file.path];
-                page.render_markdown(permalinks, tera, config, &plugins, insert_anchor)
+                page.render_markdown(permalinks, tera, config, &plugins)
             })
             .collect::<Result<()>>()?;
 
@@ -410,14 +394,11 @@ impl Site {
         let plugins = self.plugins.get_or_try(|| self.load_plugins())?;
         self.permalinks.insert(page.file.relative.clone(), page.permalink.clone());
         if render_md {
-            let insert_anchor =
-                self.find_parent_section_insert_anchor(&page.file.parent, &page.lang);
             page.render_markdown(
                 &self.permalinks,
                 &self.tera,
                 &self.config,
                 &plugins,
-                insert_anchor,
             )?;
         }
 
@@ -464,24 +445,6 @@ impl Site {
         let library = self.library.read().unwrap();
         let section = library.get_section(&path).unwrap();
         self.render_section(&section, true)
-    }
-
-    /// Finds the insert_anchor for the parent section of the directory at `path`.
-    /// Defaults to `AnchorInsert::None` if no parent section found
-    pub fn find_parent_section_insert_anchor(
-        &self,
-        parent_path: &PathBuf,
-        lang: &str,
-    ) -> InsertAnchor {
-        let parent = if lang != self.config.default_language {
-            parent_path.join(format!("_index.{}.md", lang))
-        } else {
-            parent_path.join("_index.md")
-        };
-        match self.library.read().unwrap().get_section(&parent) {
-            Some(s) => s.meta.insert_anchor_links,
-            None => InsertAnchor::None,
-        }
     }
 
     /// Find out the direct subsections of each subsection if there are some

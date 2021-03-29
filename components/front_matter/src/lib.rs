@@ -52,14 +52,6 @@ pub enum SortBy {
     None,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum InsertAnchor {
-    Left,
-    Right,
-    None,
-}
-
 /// Split a file between the front matter and its content
 /// Will return an error if the front matter wasn't found
 fn split_content<'c>(file_path: &Path, content: &'c str) -> Result<(RawFrontMatter<'c>, &'c str)> {

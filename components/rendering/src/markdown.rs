@@ -6,15 +6,12 @@ use crate::context::RenderContext;
 use crate::table_of_contents::{make_table_of_contents, Heading};
 use config::highlighting::highlight_code;
 use errors::{Error, Result};
-use front_matter::InsertAnchor;
 use utils::site::resolve_internal_link;
 use utils::slugs::slugify_anchors;
-use utils::vec::InsertMany;
 
 use self::cmark::{Event, LinkType, Options, Parser, Tag};
 
 const CONTINUE_READING: &str = "<span id=\"continue-reading\"></span>";
-const ANCHOR_LINK_TEMPLATE: &str = "anchor-link.html";
 
 #[derive(Debug)]
 pub struct Rendered {
@@ -313,8 +310,6 @@ pub fn markdown_to_html(content: &str, context: &RenderContext) -> Result<Render
 
         let mut heading_refs = get_heading_refs(&events);
 
-        let mut anchors_to_insert = vec![];
-
         // First heading pass: look for a manually-specified IDs, e.g. `# Heading text {#hash}`
         // (This is a separate first pass so that auto IDs can avoid collisions with manual IDs.)
         for heading_ref in heading_refs.iter_mut() {
@@ -352,36 +347,11 @@ pub fn markdown_to_html(content: &str, context: &RenderContext) -> Result<Render
             let html = format!("<h{lvl} id=\"{id}\">", lvl = heading_ref.level, id = id);
             events[start_idx] = Event::Html(html.into());
 
-            // generate anchors and places to insert them
-            if context.insert_anchor != InsertAnchor::None {
-                let anchor_idx = match context.insert_anchor {
-                    InsertAnchor::Left => start_idx + 1,
-                    InsertAnchor::Right => end_idx,
-                    InsertAnchor::None => 0, // Not important
-                };
-                let mut c = tera::Context::new();
-                c.insert("id", &id);
-                c.insert("level", &heading_ref.level);
-
-                let anchor_link = utils::templates::render_template(
-                    &ANCHOR_LINK_TEMPLATE,
-                    &context.tera,
-                    c,
-                    &None,
-                )
-                .map_err(|e| Error::chain("Failed to render anchor link template", e))?;
-                anchors_to_insert.push((anchor_idx, Event::Html(anchor_link.into())));
-            }
-
             // record heading to make table of contents
             let permalink = format!("{}#{}", context.current_page_permalink, id);
             let h =
                 Heading { level: heading_ref.level, id, permalink, title, children: Vec::new() };
             headings.push(h);
-        }
-
-        if context.insert_anchor != InsertAnchor::None {
-            events.insert_many(anchors_to_insert);
         }
 
         cmark::html::push_html(&mut html, events.into_iter());

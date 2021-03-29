@@ -10,7 +10,7 @@ use tera::{Context as TeraContext, Tera};
 use crate::library::Library;
 use config::Config;
 use errors::{Error, Result};
-use front_matter::{split_page_content, InsertAnchor, PageFrontMatter};
+use front_matter::{split_page_content, PageFrontMatter};
 use plugins::Plugins;
 use rendering::{render_content, Heading, RenderContext};
 use utils::fs::{find_related_assets, read_file};
@@ -245,7 +245,6 @@ impl Page {
         tera: &Tera,
         config: &Config,
         plugins: &Plugins,
-        anchor_insert: InsertAnchor,
     ) -> Result<()> {
         let mut context = RenderContext::new(
             tera,
@@ -253,7 +252,6 @@ impl Page {
             Some(plugins),
             &self.permalink,
             permalinks,
-            anchor_insert,
         );
 
         context.tera_context.insert("page", &SerializingPage::from_page_basic(self, None));
