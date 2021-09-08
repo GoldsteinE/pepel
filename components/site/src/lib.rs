@@ -39,15 +39,15 @@ lazy_static! {
 /// Where are we building the site
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum BuildMode {
-    /// On the filesystem -> `zola build`, The path is the `output_path`
+    /// On the filesystem -> `pepel build`, The path is the `output_path`
     Disk,
-    /// In memory for the content -> `zola serve`
+    /// In memory for the content -> `pepel serve`
     Memory,
 }
 
 #[derive(Debug)]
 pub struct Site {
-    /// The base path of the zola site
+    /// The base path of the pepel site
     pub base_path: PathBuf,
     /// The parsed config for the site
     pub config: Config,
@@ -122,7 +122,7 @@ impl Site {
         Plugins::load(&self.plugins_dir, &self.config.plugins)
     }
 
-    /// Enable some `zola serve` related options
+    /// Enable some `pepel serve` related options
     pub fn enable_serve_mode(&mut self) {
         SITE_CONTENT.write().unwrap().clear();
         self.config.enable_serve_mode();
@@ -155,7 +155,7 @@ impl Site {
         self.live_reload = get_available_port(port_to_avoid);
     }
 
-    /// Only used in `zola serve` to re-use the initial websocket port
+    /// Only used in `pepel serve` to re-use the initial websocket port
     pub fn enable_live_reload_with_port(&mut self, live_reload_port: u16) {
         self.live_reload = Some(live_reload_port);
     }
@@ -429,7 +429,7 @@ impl Site {
     }
 
     /// Adds a page to the site and render it
-    /// Only used in `zola serve --fast`
+    /// Only used in `pepel serve --fast`
     pub fn add_and_render_page(&mut self, path: &Path) -> Result<()> {
         let page = Page::from_file(path, &self.config, &self.base_path)?;
         self.add_page(page, true)?;
@@ -456,7 +456,7 @@ impl Site {
     }
 
     /// Adds a section to the site and render it
-    /// Only used in `zola serve --fast`
+    /// Only used in `pepel serve --fast`
     pub fn add_and_render_section(&mut self, path: &Path) -> Result<()> {
         let section = Section::from_file(path, &self.config, &self.base_path)?;
         self.add_section(section, true)?;
@@ -641,7 +641,7 @@ impl Site {
             let theme = &THEME_SET.themes[theme_name];
             let theme_css = syntect::html::css_for_theme_with_class_style(
                 theme,
-                ClassStyle::SpacedPrefixed { prefix: "zola-hl-" },
+                ClassStyle::SpacedPrefixed { prefix: "pepel-hl-" },
             );
             let mut theme_file_name = themes_dir.join(theme_name);
             theme_file_name.set_extension("css");
@@ -651,10 +651,10 @@ impl Site {
         Ok(())
     }
 
-    /// Deletes the `public` directory (only for `zola build`) and builds the site
+    /// Deletes the `public` directory (only for `pepel build`) and builds the site
     pub fn build(&self) -> Result<()> {
         let mut start = Instant::now();
-        // Do not clean on `zola serve` otherwise we end up copying assets all the time
+        // Do not clean on `pepel serve` otherwise we end up copying assets all the time
         if self.build_mode == BuildMode::Disk {
             self.clean()?;
         }
@@ -1159,7 +1159,7 @@ impl Site {
 }
 
 fn log_time(start: Instant, message: &str) -> Instant {
-    let do_print = std::env::var("ZOLA_PERF_LOG").is_ok();
+    let do_print = std::env::var("PEPEL_PERF_LOG").is_ok();
     let now = Instant::now();
     if do_print {
         println!("{} took {}ms", message, now.duration_since(start).as_millis());
