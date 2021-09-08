@@ -39,7 +39,7 @@ pub fn render_template(
     }
 
     // check if it is part of ZOLA_TERA defaults
-    let default_name = format!("__zola_builtins/{}", name);
+    let default_name = format!("__pepel_builtins/{}", name);
     if tera.templates.contains_key(&default_name) {
         return tera.render(&default_name, &context).map_err(std::convert::Into::into);
     }
