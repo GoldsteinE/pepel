@@ -2,12 +2,12 @@
 using namespace System.Management.Automation
 using namespace System.Management.Automation.Language
 
-Register-ArgumentCompleter -Native -CommandName 'zola' -ScriptBlock {
+Register-ArgumentCompleter -Native -CommandName 'pepel' -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPosition)
 
     $commandElements = $commandAst.CommandElements
     $command = @(
-        'zola'
+        'pepel'
         for ($i = 1; $i -lt $commandElements.Count; $i++) {
             $element = $commandElements[$i]
             if ($element -isnot [StringConstantExpressionAst] -or
@@ -19,28 +19,28 @@ Register-ArgumentCompleter -Native -CommandName 'zola' -ScriptBlock {
     }) -join ';'
 
     $completions = @(switch ($command) {
-        'zola' {
+        'pepel' {
             [CompletionResult]::new('-c', 'c', [CompletionResultType]::ParameterName, 'Path to a config file other than config.toml in the root of project')
             [CompletionResult]::new('--config', 'config', [CompletionResultType]::ParameterName, 'Path to a config file other than config.toml in the root of project')
             [CompletionResult]::new('-h', 'h', [CompletionResultType]::ParameterName, 'Prints help information')
             [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Prints help information')
             [CompletionResult]::new('-V', 'V', [CompletionResultType]::ParameterName, 'Prints version information')
             [CompletionResult]::new('--version', 'version', [CompletionResultType]::ParameterName, 'Prints version information')
-            [CompletionResult]::new('init', 'init', [CompletionResultType]::ParameterValue, 'Create a new Zola project')
+            [CompletionResult]::new('init', 'init', [CompletionResultType]::ParameterValue, 'Create a new pepel project')
             [CompletionResult]::new('build', 'build', [CompletionResultType]::ParameterValue, 'Deletes the output directory if there is one and builds the site')
             [CompletionResult]::new('serve', 'serve', [CompletionResultType]::ParameterValue, 'Serve the site. Rebuild and reload on change automatically')
             [CompletionResult]::new('check', 'check', [CompletionResultType]::ParameterValue, 'Try building the project without rendering it. Checks links')
             [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Prints this message or the help of the given subcommand(s)')
             break
         }
-        'zola;init' {
+        'pepel;init' {
             [CompletionResult]::new('-h', 'h', [CompletionResultType]::ParameterName, 'Prints help information')
             [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Prints help information')
             [CompletionResult]::new('-V', 'V', [CompletionResultType]::ParameterName, 'Prints version information')
             [CompletionResult]::new('--version', 'version', [CompletionResultType]::ParameterName, 'Prints version information')
             break
         }
-        'zola;build' {
+        'pepel;build' {
             [CompletionResult]::new('-u', 'u', [CompletionResultType]::ParameterName, 'Force the base URL to be that value (default to the one in config.toml)')
             [CompletionResult]::new('--base-url', 'base-url', [CompletionResultType]::ParameterName, 'Force the base URL to be that value (default to the one in config.toml)')
             [CompletionResult]::new('-o', 'o', [CompletionResultType]::ParameterName, 'Outputs the generated site in the given path')
@@ -52,7 +52,7 @@ Register-ArgumentCompleter -Native -CommandName 'zola' -ScriptBlock {
             [CompletionResult]::new('--version', 'version', [CompletionResultType]::ParameterName, 'Prints version information')
             break
         }
-        'zola;serve' {
+        'pepel;serve' {
             [CompletionResult]::new('-i', 'i', [CompletionResultType]::ParameterName, 'Interface to bind on')
             [CompletionResult]::new('--interface', 'interface', [CompletionResultType]::ParameterName, 'Interface to bind on')
             [CompletionResult]::new('-p', 'p', [CompletionResultType]::ParameterName, 'Which port to use')
@@ -71,7 +71,7 @@ Register-ArgumentCompleter -Native -CommandName 'zola' -ScriptBlock {
             [CompletionResult]::new('--version', 'version', [CompletionResultType]::ParameterName, 'Prints version information')
             break
         }
-        'zola;check' {
+        'pepel;check' {
             [CompletionResult]::new('--drafts', 'drafts', [CompletionResultType]::ParameterName, 'Include drafts when loading the site')
             [CompletionResult]::new('-h', 'h', [CompletionResultType]::ParameterName, 'Prints help information')
             [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Prints help information')
@@ -79,7 +79,7 @@ Register-ArgumentCompleter -Native -CommandName 'zola' -ScriptBlock {
             [CompletionResult]::new('--version', 'version', [CompletionResultType]::ParameterName, 'Prints version information')
             break
         }
-        'zola;help' {
+        'pepel;help' {
             [CompletionResult]::new('-h', 'h', [CompletionResultType]::ParameterName, 'Prints help information')
             [CompletionResult]::new('--help', 'help', [CompletionResultType]::ParameterName, 'Prints help information')
             [CompletionResult]::new('-V', 'V', [CompletionResultType]::ParameterName, 'Prints version information')

@@ -4,7 +4,7 @@ use crate::Site;
 use errors::{Error, ErrorKind, Result};
 
 /// Very similar to check_external_links but can't be merged as far as I can see since we always
-/// want to check the internal links but only the external in zola check :/
+/// want to check the internal links but only the external in pepel check :/
 pub fn check_internal_links_with_anchors(site: &Site) -> Result<()> {
     let library = site.library.write().expect("Get lock for check_internal_links_with_anchors");
     let page_links = library

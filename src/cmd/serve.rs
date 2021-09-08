@@ -38,7 +38,7 @@ use notify::{watcher, RecursiveMode, Watcher};
 use ws::{Message, Sender, WebSocket};
 
 use config::HighlighterSettings;
-use errors::{Error as ZolaError, Result};
+use errors::{Error as PepelError, Result};
 use globset::GlobSet;
 use relative_path::{RelativePath, RelativePathBuf};
 use site::sass::compile_sass;
@@ -268,7 +268,7 @@ pub fn serve(
     }
 
     // An array of (path, bool, bool) where the path should be watched for changes, and the boolean value
-    // indicates whether this file/folder must exist for zola serve to operate
+    // indicates whether this file/folder must exist for pepel serve to operate
     let watch_this = vec![
         ("config.toml", WatchMode::Required),
         ("content", WatchMode::Required),
@@ -299,7 +299,7 @@ pub fn serve(
         if should_watch {
             watcher
                 .watch(root_dir.join(entry), RecursiveMode::Recursive)
-                .map_err(|e| ZolaError::chain(format!("Can't watch `{}` for changes in folder `{}`. Does it exist, and do you have correct permissions?", entry, root_dir.display()), e))?;
+                .map_err(|e| PepelError::chain(format!("Can't watch `{}` for changes in folder `{}`. Does it exist, and do you have correct permissions?", entry, root_dir.display()), e))?;
             watchers.push(entry.to_string());
         }
     }
@@ -353,7 +353,7 @@ pub fn serve(
                         {
                             "command": "hello",
                             "protocols": [ "http://livereload.com/protocols/official-7" ],
-                            "serverName": "Zola"
+                            "serverName": "Pepel"
                         }
                     "#,
                     ));

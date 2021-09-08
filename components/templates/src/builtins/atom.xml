@@ -16,7 +16,7 @@
         {{ config.base_url | escape_xml | safe }}
       {%- endif -%}
     "/>
-	<generator uri="https://www.getzola.org/">Zola</generator>
+  <generator uri="https://github.com/GoldsteinE/pepel">Pepel (fork of Zola)</generator>
 	<updated>{{ last_updated | date(format="%+") }}</updated>
 	<id>{{ feed_url | safe }}</id>
 	{%- for page in pages %}

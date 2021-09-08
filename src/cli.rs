@@ -1,7 +1,7 @@
 use clap::{crate_authors, crate_description, crate_version, App, AppSettings, Arg, SubCommand};
 
 pub fn build_cli() -> App<'static, 'static> {
-    App::new("zola")
+    App::new("pepel")
         .version(crate_version!())
         .author(crate_authors!())
         .about(crate_description!())
@@ -23,7 +23,7 @@ pub fn build_cli() -> App<'static, 'static> {
         )
         .subcommands(vec![
             SubCommand::with_name("init")
-                .about("Create a new Zola project")
+                .about("Create a new Pepel project")
                 .args(&[
                     Arg::with_name("name")
                         .default_value(".")

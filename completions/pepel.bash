@@ -1,4 +1,4 @@
-_zola() {
+_pepel() {
     local i cur prev opts cmds
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
@@ -9,8 +9,8 @@ _zola() {
     for i in ${COMP_WORDS[@]}
     do
         case "${i}" in
-            zola)
-                cmd="zola"
+            pepel)
+                cmd="pepel"
                 ;;
             
             build)
@@ -34,7 +34,7 @@ _zola() {
     done
 
     case "${cmd}" in
-        zola)
+        pepel)
             opts=" -h -V -c  --help --version --config   init build serve check help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -58,7 +58,7 @@ _zola() {
             return 0
             ;;
         
-        zola__build)
+        pepel__build)
             opts=" -h -V -u -o  --drafts --help --version --base-url --output-dir  "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -89,7 +89,7 @@ _zola() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        zola__check)
+        pepel__check)
             opts=" -h -V  --drafts --help --version  "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -104,7 +104,7 @@ _zola() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        zola__help)
+        pepel__help)
             opts=" -h -V  --help --version  "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -119,7 +119,7 @@ _zola() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        zola__init)
+        pepel__init)
             opts=" -h -V  --help --version  <name> "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -134,7 +134,7 @@ _zola() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        zola__serve)
+        pepel__serve)
             opts=" -O -h -V -i -p -o -u  --watch-only --drafts --open --help --version --interface --port --output-dir --base-url  "
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -184,4 +184,4 @@ _zola() {
     esac
 }
 
-complete -F _zola -o bashdefault -o default zola
+complete -F _pepel -o bashdefault -o default pepel

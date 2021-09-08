@@ -24,12 +24,12 @@ fn wrap_pre_code(language: Option<&str>, mut code: String, classed: bool) -> Str
             lang_prefix = format!(
                 r#"<pre{1}><code class="language-{0}" data-lang="{0}">"#,
                 language,
-                if classed { r#" class="zola-hl-code""# } else { "" }
+                if classed { r#" class="pepel-hl-code""# } else { "" }
             );
             lang_prefix.as_str()
         }
         (None, false) => r#"<pre><code>"#,
-        (None, true) => r#"<pre class="zola-hl-code"><code>"#,
+        (None, true) => r#"<pre class="pepel-hl-code"><code>"#,
     };
     code.insert_str(0, prefix);
     code.push_str("</code></pre>");
@@ -52,7 +52,7 @@ pub fn highlight_code(config: &Config, language: Option<&str>, code: String) -> 
             let mut hl = ClassedHTMLGenerator::new_with_class_style(
                 syntax,
                 syntax_set,
-                ClassStyle::SpacedPrefixed { prefix: "zola-hl-" },
+                ClassStyle::SpacedPrefixed { prefix: "pepel-hl-" },
             );
 
             for line in LinesWithEndings::from(&code) {

@@ -416,7 +416,7 @@ mod tests {
         assert!(starts_with_schema("h323:user@example.com"));
 
         // arbitrary
-        assert!(starts_with_schema("zola:post?content=hi"));
+        assert!(starts_with_schema("pepel:post?content=hi"));
 
         // case-insensitive
         assert!(starts_with_schema("MailTo:user@example.com"));

@@ -1,13 +1,17 @@
-# zola (né Gutenberg)
+# Pepel, fork of Zola with plugins
 
 [![Build Status](https://dev.azure.com/getzola/zola/_apis/build/status/getzola.zola?branchName=master)](https://dev.azure.com/getzola/zola/_build/latest?definitionId=1&branchName=master)
 
-A fast static site generator in a single binary with everything built-in.
+A fast static site generator in a single binary with everything built-in and also plugins.
 
-Documentation is available on [its site](https://www.getzola.org/documentation/getting-started/installation/) or
-in the `docs/content` folder of the repository and the community can use [its forum](https://zola.discourse.group).
+Documentation is available on Zola [its site](https://www.getzola.org/documentation/getting-started/installation/) or
+in the `docs/content` folder of the repository and the community can use [its forum](https://zola.discourse.group) for general Zola-related questions.
+
+Plugins documentation will be available someday.
 
 ## Comparisons with other static site generators
+
+Pepel is like Zola but with plugins.
 
 |                                 | Zola   | Cobalt | Hugo   | Pelican |
 |:--------------------------------|:------:|:------:|:------:|:-------:|

@@ -1,8 +1,8 @@
-#compdef zola
+#compdef pepel
 
 autoload -U is-at-least
 
-_zola() {
+_pepel() {
     typeset -A opt_args
     typeset -a _arguments_options
     local ret=1
@@ -21,14 +21,14 @@ _zola() {
 '--help[Prints help information]' \
 '-V[Prints version information]' \
 '--version[Prints version information]' \
-":: :_zola_commands" \
-"*::: :->zola" \
+":: :_pepel_commands" \
+"*::: :->pepel" \
 && ret=0
     case $state in
-    (zola)
+    (pepel)
         words=($line[1] "${words[@]}")
         (( CURRENT += 1 ))
-        curcontext="${curcontext%:*:*}:zola-command-$line[1]:"
+        curcontext="${curcontext%:*:*}:pepel-command-$line[1]:"
         case $line[1] in
             (init)
 _arguments "${_arguments_options[@]}" \
@@ -94,51 +94,51 @@ _arguments "${_arguments_options[@]}" \
 esac
 }
 
-(( $+functions[_zola_commands] )) ||
-_zola_commands() {
+(( $+functions[_pepel_commands] )) ||
+_pepel_commands() {
     local commands; commands=(
-        "init:Create a new Zola project" \
+        "init:Create a new pepel project" \
 "build:Deletes the output directory if there is one and builds the site" \
 "serve:Serve the site. Rebuild and reload on change automatically" \
 "check:Try building the project without rendering it. Checks links" \
 "help:Prints this message or the help of the given subcommand(s)" \
     )
-    _describe -t commands 'zola commands' commands "$@"
+    _describe -t commands 'pepel commands' commands "$@"
 }
-(( $+functions[_zola__build_commands] )) ||
-_zola__build_commands() {
+(( $+functions[_pepel__build_commands] )) ||
+_pepel__build_commands() {
     local commands; commands=(
         
     )
-    _describe -t commands 'zola build commands' commands "$@"
+    _describe -t commands 'pepel build commands' commands "$@"
 }
-(( $+functions[_zola__check_commands] )) ||
-_zola__check_commands() {
+(( $+functions[_pepel__check_commands] )) ||
+_pepel__check_commands() {
     local commands; commands=(
         
     )
-    _describe -t commands 'zola check commands' commands "$@"
+    _describe -t commands 'pepel check commands' commands "$@"
 }
-(( $+functions[_zola__help_commands] )) ||
-_zola__help_commands() {
+(( $+functions[_pepel__help_commands] )) ||
+_pepel__help_commands() {
     local commands; commands=(
         
     )
-    _describe -t commands 'zola help commands' commands "$@"
+    _describe -t commands 'pepel help commands' commands "$@"
 }
-(( $+functions[_zola__init_commands] )) ||
-_zola__init_commands() {
+(( $+functions[_pepel__init_commands] )) ||
+_pepel__init_commands() {
     local commands; commands=(
         
     )
-    _describe -t commands 'zola init commands' commands "$@"
+    _describe -t commands 'pepel init commands' commands "$@"
 }
-(( $+functions[_zola__serve_commands] )) ||
-_zola__serve_commands() {
+(( $+functions[_pepel__serve_commands] )) ||
+_pepel__serve_commands() {
     local commands; commands=(
         
     )
-    _describe -t commands 'zola serve commands' commands "$@"
+    _describe -t commands 'pepel serve commands' commands "$@"
 }
 
-_zola "$@"
+_pepel "$@"

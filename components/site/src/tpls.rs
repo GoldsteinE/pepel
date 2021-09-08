@@ -5,7 +5,7 @@ use tera::Tera;
 use crate::Site;
 use config::Config;
 use errors::{bail, Error, Result};
-use templates::{filters, global_fns, ZOLA_TERA};
+use templates::{filters, global_fns, PEPEL_TERA};
 use utils::templates::rewrite_theme_paths;
 
 pub fn load_tera(path: &Path, config: &Config) -> Result<Tera> {
@@ -38,7 +38,7 @@ pub fn load_tera(path: &Path, config: &Config) -> Result<Tera> {
         }
         tera.extend(&tera_theme)?;
     }
-    tera.extend(&ZOLA_TERA)?;
+    tera.extend(&PEPEL_TERA)?;
     tera.build_inheritance_chains()?;
 
     if path.join("templates").join("robots.txt").exists() {

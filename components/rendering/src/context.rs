@@ -6,7 +6,7 @@ use front_matter::InsertAnchor;
 use plugins::Plugins;
 use tera::{Context, Tera};
 
-/// All the information from the zola site that is needed to render HTML from markdown
+/// All the information from the pepel site that is needed to render HTML from markdown
 #[derive(Debug)]
 pub struct RenderContext<'a> {
     pub tera: Cow<'a, Tera>,

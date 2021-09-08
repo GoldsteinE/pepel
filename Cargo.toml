@@ -1,13 +1,12 @@
 [package]
-name = "zola"
+name = "pepel"
 version = "0.13.0"
-authors = ["Vincent Prouillet <hello@vincentprouillet.com>"]
+authors = ["Vincent Prouillet <hello@vincentprouillet.com>", "Maximilian Siling <root@goldstein.rs>"]
 edition = "2018"
 license = "MIT"
 readme = "README.md"
-description = "A fast static site generator with everything built-in"
-homepage = "https://www.getzola.org"
-repository = "https://github.com/getzola/zola"
+description = "A fast static site generator with everything built-in and also plugins"
+repository = "https://github.com/GoldsteinE/pepel"
 keywords = ["static", "site", "generator", "blog"]
 
 include = ["src/**/*", "LICENSE", "README.md"]
@@ -16,7 +15,7 @@ include = ["src/**/*", "LICENSE", "README.md"]
 clap = "2"
 
 [[bin]]
-name = "zola"
+name = "pepel"
 
 [dependencies]
 atty = "0.2.11"

@@ -20,7 +20,7 @@ build_search_index = %SEARCH%
 
 [markdown]
 # Whether to do syntax highlighting
-# Theme can be customised by setting the `highlight_theme` variable to a theme supported by Zola
+# Theme can be customised by setting the `highlight_theme` variable to a theme supported by Pepel
 highlight_code = %HIGHLIGHT%
 
 [extra]
@@ -88,7 +88,7 @@ pub fn create_new_project(name: &str, force: bool) -> Result<()> {
         }
     }
 
-    console::info("Welcome to Zola!");
+    console::info("Welcome to Pepel!");
     console::info("Please answer a few questions to get started quickly.");
     console::info("Any choices made can be changed by modifying the `config.toml` file later.");
 
@@ -113,9 +113,9 @@ pub fn create_new_project(name: &str, force: bool) -> Result<()> {
     ));
     println!();
     console::info(
-        "Get started by moving into the directory and using the built-in server: `zola serve`",
+        "Get started by moving into the directory and using the built-in server: `pepel serve`",
     );
-    println!("Visit https://www.getzola.org for the full documentation.");
+    println!("Visit https://www.getzola.org for the full Zola documentation. Pepel documentation will be available someday");
     Ok(())
 }
 
